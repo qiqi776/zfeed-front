@@ -1,0 +1,860 @@
+<!DOCTYPE html><html class="light" lang="zh-CN" style=""><head></head><body class="text-on-surface font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">```html
+
+
+
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>zfeed - 关注信息流</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#575e72",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#d8dadc",
+                        "on-tertiary-fixed": "#1d192a",
+                        "surface-container-high": "#e6e8ea",
+                        "secondary-fixed": "#dbe2fa",
+                        "on-surface": "#191c1e",
+                        "surface-container": "#eceef0",
+                        "primary": "#1f53c9",
+                        "inverse-surface": "#2d3133",
+                        "surface-tint": "#2355cc",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-secondary-container": "#5d6478",
+                        "surface-container-low": "#f2f4f6",
+                        "secondary-fixed-dim": "#bfc6dd",
+                        "tertiary": "#5f596d",
+                        "surface-bright": "#f7f9fb",
+                        "on-primary-container": "#fefcff",
+                        "secondary-container": "#dbe2fa",
+                        "tertiary-fixed-dim": "#cbc3da",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#494457",
+                        "primary-container": "#406de4",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "outline-variant": "#c3c6d6",
+                        "on-surface-variant": "#434654",
+                        "on-primary-fixed": "#00174c",
+                        "on-primary-fixed-variant": "#003daa",
+                        "surface-variant": "#e0e3e5",
+                        "inverse-primary": "#b4c5ff",
+                        "surface": "#f7f9fb",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#787186",
+                        "background": "#f7f9fb",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#3f4759",
+                        "tertiary-fixed": "#e7dff6",
+                        "on-background": "#191c1e",
+                        "on-tertiary-container": "#fffbff",
+                        "outline": "#747685",
+                        "on-secondary-fixed": "#141b2c",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-margin": "48px",
+                        "container-padding": "32px",
+                        "element-gap": "16px",
+                        "glass-padding": "24px",
+                        "grid-gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "meta-xs": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "meta-xs": ["11px", { "lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Liquid Glass Utility Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.8); /* Specular highlight */
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), 
+                        0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .glass-input {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+            transition: all 0.3s ease-out;
+        }
+        
+        .glass-input:focus {
+            outline: none;
+            border-color: var(--color-primary, #1f53c9);
+            box-shadow: 0 0 0 2px rgba(31, 83, 201, 0.2), inset 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .search-shell {
+            border-radius: 9999px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease-out;
+        }
+
+        .search-shell:hover,
+        .search-shell:focus-within {
+            transform: translateY(-2px);
+            filter: drop-shadow(0 10px 22px rgba(31, 83, 201, 0.14));
+        }
+
+        .search-shell .glass-input {
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75), 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+
+        .search-shell:hover .glass-input {
+            background: rgba(255, 255, 255, 0.62);
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);
+        }
+
+        .search-shell:focus-within .glass-input {
+            background: rgba(255, 255, 255, 0.72);
+            border-color: rgba(31, 83, 201, 0.55);
+            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 10px 28px rgba(31, 83, 201, 0.16);
+        }
+
+        .search-shell::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -140%;
+            width: 42%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.65s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .search-shell:hover::after,
+        .search-shell:focus-within::after {
+            left: 160%;
+        }
+
+        .composer-shell {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+            border-radius: 1.25rem;
+            background: rgba(255, 255, 255, 0.34);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.62);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.72), 0 4px 16px rgba(0, 0, 0, 0.035);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+        }
+
+        .composer-shell:hover,
+        .composer-shell:focus-within {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.58);
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 10px 28px rgba(31, 83, 201, 0.12);
+        }
+
+        .composer-shell:focus-within {
+            border-color: rgba(31, 83, 201, 0.50);
+            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 12px 30px rgba(31, 83, 201, 0.16);
+        }
+
+        .composer-shell::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -140%;
+            width: 42%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.65s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .composer-shell:hover::after,
+        .composer-shell:focus-within::after {
+            left: 160%;
+        }
+
+        .composer-shell input {
+            position: relative;
+            z-index: 20;
+            min-height: 44px;
+            padding: 0.65rem 0.95rem;
+        }
+
+        .composer-shell input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .top-channel {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            min-height: 34px;
+            padding: 0 12px;
+            border-radius: 9999px;
+            color: var(--color-on-surface-variant, #434654);
+            font-weight: 600;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease-out, background 0.25s ease-out, box-shadow 0.25s ease-out;
+        }
+
+        .top-channel::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -140%;
+            width: 42%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.65s ease;
+            pointer-events: none;
+        }
+
+        .top-channel:hover {
+            transform: translateY(-2px);
+            color: var(--color-primary, #1f53c9);
+            background: rgba(255, 255, 255, 0.62);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);
+        }
+
+        .top-channel.active {
+            color: var(--color-primary, #1f53c9);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(236, 244, 255, 0.62));
+            backdrop-filter: blur(20px) saturate(1.25);
+            -webkit-backdrop-filter: blur(20px) saturate(1.25);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(31, 83, 201, 0.12), 0 10px 24px rgba(31, 83, 201, 0.10);
+        }
+
+        .top-channel:hover::after,
+        .top-channel.active::after {
+            left: 160%;
+        }
+
+        .top-channel:active {
+            transform: translateY(-1px) scale(0.97);
+        }
+
+        .top-icon-btn {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(2px);
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.45);
+        }
+
+        .top-icon-btn:hover {
+            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.42);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.70), 0 8px 18px rgba(31, 83, 201, 0.10);
+        }
+
+        .glass-button-primary {
+            background: linear-gradient(135deg, rgba(64, 109, 228, 0.9) 0%, rgba(31, 83, 201, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(31, 83, 201, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease-out;
+        }
+        
+        .glass-button-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(31, 83, 201, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+
+        .glass-button-ghost {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease-out;
+        }
+
+        .glass-button-ghost:hover {
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Hover Lift and Shine Effects */
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 12px 30px rgba(0, 0, 0, 0.08);
+            border-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .shine-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .shine-effect::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.7s ease;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .shine-effect:hover::after {
+            left: 200%;
+        }
+
+        /* Ambient Background */
+        body {
+            background-color: #eef2f6;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(180, 197, 255, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(219, 226, 250, 0.5) 0%, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .feed-transition {
+            opacity: 0;
+            transform: translateY(8px) scale(0.995);
+            filter: blur(8px);
+            transition:
+                opacity 0.28s ease,
+                transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                filter 0.34s ease;
+        }
+
+        .feed-transition.feed-ready {
+            opacity: 1;
+            transform: none;
+            filter: none;
+        }
+
+        .feed-transition.feed-leaving {
+            opacity: 0;
+            transform: translateY(6px) scale(0.996);
+            filter: blur(7px);
+            pointer-events: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .feed-transition,
+            .feed-transition.feed-ready,
+            .feed-transition.feed-leaving {
+                opacity: 1;
+                transform: none;
+                filter: none;
+                transition: none;
+            }
+        }
+
+        .chart-glow-line {
+            filter: drop-shadow(0 4px 6px rgba(31, 83, 201, 0.2));
+        }
+
+        .nav-link-hover {
+            transition: all 0.2s ease-out;
+        }
+        .nav-link-hover:hover {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 0.75rem;
+        }
+    </style>
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md">
+<div class="flex items-center gap-4">
+<!-- Mobile Menu Toggle (hidden on md) -->
+<button class="md:hidden p-2 text-on-surface-variant hover:bg-white/20 active:scale-95 rounded-full transition-all duration-300 ease-out">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity duration-300 gap-3">
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center shadow-md">
+<div class="w-3 h-3 bg-white rounded-full"></div>
+</div>
+<span class="font-display text-[24px] tracking-tight font-bold text-primary dark:text-primary-fixed">zfeed</span>
+</div>
+<!-- Global Search -->
+<div class="hidden md:flex ml-8 relative w-96 group md:ml-16 search-shell overflow-hidden">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] group-focus-within:text-primary transition-colors duration-300">search</span>
+<input class="glass-input w-full pl-10 pr-4 rounded-full font-body-md text-on-surface placeholder:text-on-surface-variant/70 border-white/40 bg-white/30 backdrop-blur-md focus:bg-white/60 transition-colors py-2.5" placeholder="搜索内容、创作者或话题" type="text">
+</div>
+</div>
+<nav class="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5">
+<a class="top-channel active text-label-sm tracking-wide" href="following.html">关注</a>
+<a class="top-channel text-label-sm tracking-wide" href="pasted-html-original-copy.html">趋势</a>
+<a class="top-channel text-label-sm tracking-wide" href="pasted-html-original-copy.html">最新</a>
+<a class="top-channel text-label-sm tracking-wide" href="pasted-html-original-copy.html">AI</a>
+<a class="top-channel text-label-sm tracking-wide" href="pasted-html-original-copy.html">设计</a>
+<a class="top-channel text-label-sm tracking-wide" href="pasted-html-original-copy.html">科技</a>
+</nav>
+<div class="flex items-center gap-5 pr-12">
+<button class="top-icon-btn relative text-on-surface-variant active:scale-95 rounded-full transition-all duration-300 ease-out">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full border border-white"></span>
+</button>
+<button class="top-icon-btn relative text-on-surface-variant active:scale-95 rounded-full transition-all duration-300 ease-out">
+<span class="material-symbols-outlined">mail</span>
+<span class="absolute top-0 right-0 w-4 h-4 bg-error text-white font-label-sm text-[10px] rounded-full flex items-center justify-center border border-white">3</span>
+</button>
+<button class="hidden sm:flex glass-button-primary text-white font-label-sm py-2 rounded-full items-center gap-2 active:scale-95 px-6">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                发布
+            </button>
+<a aria-label="进入我的主页" href="profile.html?user=me">
+<img alt="用户头像" class="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out" data-alt="A close-up portrait of a young woman with natural makeup, looking directly at the camera, set against a bright, well-lit background. The style is modern, crisp, and high-resolution, fitting a premium digital interface. Soft, even lighting highlights her features." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8">
+</a>
+</div>
+</header>
+<!-- Main Layout Grid -->
+<div class="pt-24 px-4 md:px-6 max-w-[1600px] mx-auto pb-safe">
+<div class="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-5">
+<!-- Left Sidebar (SideNavBar) -->
+<aside class="hidden lg:block lg:col-span-2 relative">
+<div class="sticky top-24 w-full flex flex-col gap-8">
+<!-- Nav Items -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95" href="pasted-html-original-copy.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-[13px]">推荐</span>
+</a>
+<a class="flex items-center gap-3 bg-white/60 dark:bg-black/60 text-primary font-bold rounded-lg p-2 shadow-sm ring-1 ring-inset ring-white/40 hover:scale-[1.02] active:scale-95 transition-all duration-300 ease-out" href="following.html">
+<span class="material-symbols-outlined">person_add</span>
+<span class="font-label-sm text-[13px]">关注</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95" href="#">
+<span class="material-symbols-outlined">trending_up</span>
+<span class="font-label-sm text-[13px]">趋势</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95" href="#">
+<span class="material-symbols-outlined">bookmark</span>
+<span class="font-label-sm text-[13px]">收藏</span>
+</a>
+</nav>
+<!-- Channels Section -->
+<div class="flex flex-col gap-2">
+<span class="font-meta-xs text-on-surface-variant/70 uppercase tracking-wider px-3 mb-1">频道</span>
+<a class="flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95" href="#">
+<div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center text-blue-600 font-label-sm transition-colors duration-300">A</div>
+<span class="font-body-md text-[13px]">AI 与机器学习</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95" href="#">
+<div class="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600 font-label-sm transition-colors duration-300">D</div>
+<span class="font-body-md text-[13px]">设计与灵感</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95" href="#">
+<div class="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center text-purple-600 font-label-sm transition-colors duration-300">P</div>
+<span class="font-body-md text-[13px]">产品与增长</span>
+</a>
+<button class="flex items-center gap-2 text-on-surface-variant p-2 hover:text-primary hover:bg-white/40 rounded-lg active:scale-95 transition-all duration-300 ease-out text-[13px] font-body-md w-full justify-start mt-2">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span>
+                            更多频道
+                        </button>
+</div>
+<!-- Bottom Nav Items -->
+<div class="mt-auto flex flex-col gap-1 border-t border-white/40 pt-4">
+<a class="flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-[14px]">设置</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Middle Column: Content Feed -->
+<main class="feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-6 pb-24">
+<!-- Create Post Composer -->
+<div class="glass-panel rounded-2xl p-5 hover-lift shine-effect">
+<div class="flex gap-4 items-start mb-4">
+<img alt="当前用户" class="w-10 h-10 rounded-full border border-white shadow-sm object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAx7qVACVAfoa5-tGtCJoVLQzJu-0KY5Bl8HWWJxDPcRkjAv3tYgTX7ufXPUjFBUacZg1Vpg2akVgdTUxy9lCMRSeQpiSKenC-4nj2rBhYhBeSi2kgz1XDQamkwaPKsC-ZDbJZhDA_BsAw-bYBAAU5tXSR36sPRjVT65f4UgRRVAKfOXzlqhwwV7pUqCWgRPHLa8aji2kTbI4mJBySm9bFEqRy1XciyP1KMZxp9B4jUyIW4fJQzjnKsJfSl_WdNIBMnsBNZWee0j-Q">
+<div class="composer-shell">
+<input class="w-full bg-transparent border-none text-body-lg focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300" placeholder="分享你的想法、灵感或最新动态..." type="text">
+</div>
+</div>
+<div class="flex items-center justify-between mt-2 pt-4 border-t border-white/30">
+<div class="flex gap-2">
+<button class="glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 text-primary font-label-sm active:scale-95">
+<span class="material-symbols-outlined text-[18px]">article</span> 文字
+                            </button>
+<button class="glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 text-emerald-600 font-label-sm active:scale-95">
+<span class="material-symbols-outlined text-[18px]">image</span> 图片
+                            </button>
+<button class="glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 text-on-surface-variant font-label-sm active:scale-95">
+<span class="material-symbols-outlined text-[18px]">link</span> 链接
+                            </button>
+<button class="glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 text-purple-600 font-label-sm active:scale-95">
+<span class="material-symbols-outlined text-[18px]">play_circle</span> 视频
+                            </button>
+</div>
+</div>
+</div>
+<!-- Feed Items -->
+<div class="flex flex-col gap-6">
+<!-- Article Card 1 -->
+<article class="glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect">
+<!-- Header -->
+<div class="flex items-center justify-between mb-4 relative z-20">
+<div class="flex items-center gap-3">
+<img alt="Jax Lee" class="w-10 h-10 rounded-full border border-white shadow-sm object-cover hover:scale-105 transition-transform duration-300 cursor-pointer" data-alt="A professional headshot of a young male developer wearing glasses, subtly smiling, set against a clean, light grey backdrop. The lighting is soft and studio-quality, emphasizing a modern, tech-savvy persona appropriate for a premium digital feed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvuOLVnsjO-1iiReceld4efYvN9a7XyG7mE_uVmZnyU5HQUUdi3pGNLEkV_gMctpfyY_uQpW1qggtG_XPtZ4WbDLLbxJwfLbR1mMxf4ScYzWLW4_Vfh6iXFQV12Xem2Mvj1GomjfPyq8QZe3lyDcVFglYAl-739LfayZUdFrHwVt00UvErzKDXUKy7XQVAgBYZ2Rb2qrl60hYui7qSt9fRHkJ3wECmeiMf1wBf5tUoiNvjt7ZIFO357kFzuiy4wKkSMa8GH4srd84">
+<div>
+<div class="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+<span class="font-headline-md text-[16px]">Jax Lee</span>
+<span class="material-symbols-outlined text-primary text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="text-meta-xs text-on-surface-variant flex items-center gap-2">
+<span class="">已关注 · 独立开发者</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">18 分钟前</span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:bg-white/50 hover:text-primary active:scale-95 p-2 rounded-full transition-all duration-300 ease-out">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<!-- Content -->
+<h2 class="font-headline-md text-on-surface mb-2 relative z-20 hover:text-primary transition-colors cursor-pointer">我关注的创作者今天都在用 AI 重构工作流</h2>
+<p class="font-body-md text-on-surface-variant mb-4 line-clamp-2 relative z-20">把检索、笔记、代码生成和发布节奏串起来之后，个人创作者的交付速度明显变快。这里是我正在跟进的一组实践记录。</p>
+<!-- Media / Link Preview Block -->
+<div class="glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300">
+<div class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none group-hover:from-white/30 transition-all duration-500 z-30"></div>
+<!-- Image part -->
+<div class="w-full md:w-[60%] h-48 bg-blue-50 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-container/20 to-secondary-container/20 mix-blend-multiply z-10"></div>
+<img alt="界面设计预览" class="w-full h-full object-cover mix-blend-overlay opacity-60 group-hover:scale-105 group-hover:opacity-80 transition-all duration-700 ease-out z-0" data-alt="A clean, abstract 3D render showing sleek, frosted glass UI panels floating over a soft blue and purple gradient background. The style is 'Soft Futurism', representing modern software interfaces with light refraction and drop shadows, extremely premium and serene." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0S66apkPGg5PkhicqKL7Obg8N7a-8vTWZLnvwN_fjwIK4owo0PljTZav2gyl0R5XQU83KcTggMt3BMRFacL2DqUdTpuGc9L4knns1TeCP1PgSHUzyYRNOWVR1WDQX-TSqjp4K9WWVY1_LqQ7iDuAe42gkgYOm1VK2He4ox-rUvXjibbH4Z_q2C7gZCC5wkAJzo_x6ArmavE0dcfdnhyFv-l2GjOQzw-Jtygcbb3HFOmMwebpUU72McgI51GjL_suZaxa0M_KpyHI">
+<div class="absolute inset-0 flex items-center justify-center p-6 z-20">
+<!-- Decorative abstract UI elements -->
+<div class="w-full h-full border border-white/30 rounded-xl bg-white/20 backdrop-blur-md flex flex-col p-4 shadow-lg transform rotate-[-2deg] group-hover:rotate-0 transition-transform duration-500">
+<div class="w-1/3 h-2 bg-white/50 rounded-full mb-4"></div>
+<div class="w-full h-10 bg-white/40 rounded-lg mb-2"></div>
+<div class="w-2/3 h-10 bg-white/40 rounded-lg"></div>
+</div>
+</div>
+</div>
+<!-- Meta part -->
+<div class="w-full md:w-[40%] p-5 flex flex-col justify-center bg-white/40 backdrop-blur-md relative z-20 group-hover:bg-white/60 transition-colors duration-300">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mb-3 shadow-md group-hover:scale-110 transition-transform duration-300 ease-out">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">note_stack</span>
+</div>
+<h3 class="font-headline-md text-[16px] mb-1 group-hover:text-primary transition-colors">FollowStack：关注创作者工作台</h3>
+<p class="font-body-md text-on-surface-variant text-[13px] leading-tight mb-2">聚合已关注创作者的更新、链接和创作笔记。</p>
+<span class="font-meta-xs text-on-surface-variant/60 group-hover:text-on-surface-variant/90 transition-colors">flownote.app</span>
+</div>
+</div>
+<!-- Tags -->
+<div class="flex flex-wrap gap-2 mb-4 relative z-20">
+<span class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-label-sm text-[11px] transition-colors duration-300 cursor-pointer"># 已关注</span>
+<span class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-label-sm text-[11px] transition-colors duration-300 cursor-pointer"># 创作工作流</span>
+<span class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-label-sm text-[11px] transition-colors duration-300 cursor-pointer"># AI 工具</span>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-between border-t border-white/30 pt-4 relative z-20">
+<div class="flex gap-6">
+<button class="flex items-center gap-1.5 text-error hover:opacity-80 active:scale-95 transition-all duration-300 ease-out group">
+<span class="material-symbols-outlined text-[20px] group-active:scale-75 transition-transform" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label-sm">892</span>
+</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<span class="font-label-sm">36</span>
+</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300 ease-out group">
+<span class="material-symbols-outlined text-[20px] group-hover:rotate-180 transition-transform duration-500">sync</span>
+<span class="font-label-sm">72</span>
+</button>
+</div>
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined text-[20px]">bookmark</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined text-[20px]">ios_share</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Video Card 2 -->
+<article class="glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect">
+<div class="flex items-center justify-between mb-4 relative z-20">
+<div class="flex items-center gap-3">
+<img alt="Lin Xia" class="w-10 h-10 rounded-full border border-white shadow-sm object-cover hover:scale-105 transition-transform duration-300 cursor-pointer" data-alt="A portrait of an elegant young Asian woman looking thoughtfully off-camera. She wears a minimalist top. The lighting is soft and natural, emphasizing a serene, intellectual vibe suitable for an AI researcher profile picture in a sleek app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKH3U0AbExKb68Hpb-JJVI9QR_i52h0ee8yDQX67e9HRNk1hJ5BEGzaKTY0KejUgpHjQH8Ci6Sd0eMojgi03_UJeCawSjJ7LIrMet-EYXXjR9C_6fjZWyvL9RP0W-cSH0RxFq6ZCq0GqvLeyE2Cu3U3NMVcdIET7574HGB054ysNU21Btj1yYaONdSkkkzDGzmBxLljyhBbtLmlzuQyFPOkhQeOlF-AEu5Vdh4HbN4mlZ_VUuCR6pNHyCmSigDZaVbBWrVnnscafY">
+<div>
+<div class="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+<span class="font-headline-md text-[16px]">Lin Xia</span>
+<span class="material-symbols-outlined text-orange-400 text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="text-meta-xs text-on-surface-variant flex items-center gap-2">
+<span class="">已关注 · AI 研究员</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">42 分钟前</span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:bg-white/50 hover:text-primary active:scale-95 p-2 rounded-full transition-all duration-300 ease-out">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<h2 class="font-headline-md text-on-surface mb-2 relative z-20 hover:text-primary transition-colors cursor-pointer">关注列表精选：小团队如何把模型能力落到日常产出</h2>
+<p class="font-body-md text-on-surface-variant mb-4 line-clamp-2 relative z-20">我关注的几个研究者都提到了同一个变化：模型不只是生成内容，而是在帮团队维护上下文、复盘决策和整理可复用资产。</p>
+<!-- Video Thumbnail -->
+<div class="relative rounded-2xl overflow-hidden mb-4 group cursor-pointer shadow-sm border border-white/40 hover:shadow-md transition-shadow duration-300 z-20">
+<img alt="视频缩略图" class="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A modern, clean desk setup featuring a sleek laptop open to a complex software interface, perhaps a creative tool or code editor. Natural light pours in from a nearby window, casting soft shadows across a minimalist, uncluttered workspace. The mood is focused and productive." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAz10wqckHxx_fzlly_PU5l8rUOYXrK49zrPaAqIMU0xo1pL5FpIbMsJNd_m7A8OKuBiVIUhp220quI7hfR4gbAQKD4vx512FpOEkn7NzJj4LcnXf_t_dqNdiFkqYX28jp5PwY1ikK5BwZSnPI3wvkfq6cj6rPCPhmfb2Wg1biVMZKA3OkCZJXGg3fivfbRSRYfEMgHG-UVrtjpUN5oP8vOlpJiuDq5P57RQwykerL3XY2IYPbAiHvNGXzzgugBOS5C4IQbcpzht0k">
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300"></div>
+<!-- Glass Play Button -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-16 h-16 rounded-full bg-white/30 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg transform group-hover:scale-110 active:scale-95 transition-all duration-300">
+<span class="material-symbols-outlined text-white text-[32px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+<div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white font-meta-xs px-2 py-1 rounded-md border border-white/20">
+                                18:42
+                            </div>
+</div>
+<div class="flex flex-wrap gap-2 mb-4 relative z-20">
+<span class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-label-sm text-[11px] transition-colors duration-300 cursor-pointer"># AI 模型</span>
+<span class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-label-sm text-[11px] transition-colors duration-300 cursor-pointer"># 生产力</span>
+</div>
+<div class="flex items-center justify-between border-t border-white/30 pt-4 relative z-20">
+<div class="flex gap-6">
+<button class="flex items-center gap-1.5 text-error hover:opacity-80 active:scale-95 transition-all duration-300 ease-out group">
+<span class="material-symbols-outlined text-[20px] group-active:scale-75 transition-transform" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label-sm">1.2k</span>
+</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<span class="font-label-sm">128</span>
+</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300 ease-out group">
+<span class="material-symbols-outlined text-[20px] group-hover:rotate-180 transition-transform duration-500">sync</span>
+<span class="font-label-sm">213</span>
+</button>
+</div>
+<div class="flex gap-4">
+<button class="text-primary hover:opacity-80 active:scale-95 transition-all duration-300 ease-out flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+<span class="font-label-sm hidden sm:inline">已保存</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Loading / End of Feed indicator -->
+<div class="py-4 flex justify-center items-center gap-2 text-on-surface-variant/50">
+<span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+<span class="font-label-sm">正在加载更多...</span>
+</div>
+</div>
+</main>
+<!-- Right Column: Widgets -->
+<aside class="hidden lg:flex lg:col-span-3 flex-col gap-6">
+<!-- Trending Topics -->
+<div class="glass-panel rounded-3xl p-5 hover-lift shine-effect">
+<div class="flex items-center justify-between mb-4 relative z-20">
+<h3 class="font-headline-md text-[16px] text-on-surface">趋势话题</h3>
+<button class="text-on-surface-variant text-[13px] hover:text-primary active:scale-95 transition-all duration-300">查看全部</button>
+</div>
+<div class="flex flex-col gap-3 relative z-20">
+<!-- Item 1 -->
+<div class="flex items-center justify-between group cursor-pointer hover:bg-white/40 p-2 -mx-2 rounded-xl transition-colors duration-300">
+<div class="flex items-center gap-3">
+<span class="font-headline-md text-error w-4 text-center">1</span>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors"># AI 产品趋势</span>
+<span class="material-symbols-outlined text-error text-[16px] group-hover:-translate-y-1 transition-transform duration-300">arrow_upward</span>
+</div>
+<span class="font-meta-xs text-on-surface-variant">12.5k</span>
+</div>
+<!-- Item 2 -->
+<div class="flex items-center justify-between group cursor-pointer hover:bg-white/40 p-2 -mx-2 rounded-xl transition-colors duration-300">
+<div class="flex items-center gap-3">
+<span class="font-headline-md text-orange-400 w-4 text-center">2</span>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors"># 设计系统</span>
+<span class="material-symbols-outlined text-emerald-500 text-[16px] group-hover:-translate-y-1 transition-transform duration-300">arrow_upward</span>
+</div>
+<span class="font-meta-xs text-on-surface-variant">8.7k</span>
+</div>
+<!-- Item 3 -->
+<div class="flex items-center justify-between group cursor-pointer hover:bg-white/40 p-2 -mx-2 rounded-xl transition-colors duration-300">
+<div class="flex items-center gap-3">
+<span class="font-headline-md text-yellow-500 w-4 text-center">3</span>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors"># 独立开发日志</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">remove</span>
+</div>
+<span class="font-meta-xs text-on-surface-variant">6.3k</span>
+</div>
+<!-- Item 4 -->
+<div class="flex items-center justify-between group cursor-pointer hover:bg-white/40 p-2 -mx-2 rounded-xl transition-colors duration-300">
+<div class="flex items-center gap-3">
+<span class="font-headline-md text-on-surface-variant w-4 text-center">4</span>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors"># 远程工作技巧</span>
+<span class="material-symbols-outlined text-emerald-500 text-[16px] group-hover:-translate-y-1 transition-transform duration-300">arrow_upward</span>
+</div>
+<span class="font-meta-xs text-on-surface-variant">4.1k</span>
+</div>
+<!-- Item 5 -->
+<div class="flex items-center justify-between group cursor-pointer hover:bg-white/40 p-2 -mx-2 rounded-xl transition-colors duration-300 mt-1">
+<div class="flex items-center gap-3">
+<span class="font-headline-md text-on-surface-variant w-4 text-center">5</span>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors"># 创作者经济</span>
+<span class="px-2 py-0.5 bg-primary/10 text-primary rounded-md font-meta-xs group-hover:bg-primary/20 transition-colors">新</span>
+</div>
+<span class="font-meta-xs text-on-surface-variant">3.2k</span>
+</div>
+</div>
+</div>
+<!-- Recommended for You -->
+<div class="glass-panel rounded-3xl p-5 hover-lift shine-effect">
+<div class="flex items-center justify-between mb-4 relative z-20">
+<h3 class="font-headline-md text-[16px] text-on-surface">为你推荐</h3>
+<button class="flex items-center gap-1 text-on-surface-variant text-[13px] hover:text-primary active:scale-95 transition-all duration-300 group">
+<span class="material-symbols-outlined text-[16px] group-hover:rotate-180 transition-transform duration-500">refresh</span> 换一批
+                        </button>
+</div>
+<div class="flex flex-col gap-4 relative z-20">
+<!-- Person 1 -->
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<img alt="用户" class="w-10 h-10 rounded-full border border-white object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A portrait of a young man with a casual haircut, wearing a simple t-shirt, set against a bright, airy background. The style is approachable and modern, suitable for a digital profile picture in a clean, soft-futurist UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWq-D_IMAoovUJnq2NeL9-Wm6WK7d7dWPFW5mEr4Zc-BC5am_HSoshASJ_432ojGLAXiF4n9BEUxU79VCb1qMF6lIww0vrQxbrAX_2Lf66y3Oyt2Aqmua_WTEnomNIxL3LKHsKYfugq8uxCECu8DMs2g6pvdYx6VJX536DIeFiyme4A6WSadft_V0Qz6wS-no1S0JGZSCZ2U25rsVMXl1gPcikmRe8NMv0Q_iy0tvZS0UzuCzwmTFNi_oAR4RfLgvPAiIzgkp-m_U">
+<div class="flex flex-col cursor-pointer">
+<span class="font-headline-md text-[14px] group-hover:text-primary transition-colors">Zhang Xiaolong</span>
+<span class="font-meta-xs text-on-surface-variant">产品经理</span>
+</div>
+</div>
+<button class="glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300">关注</button>
+</div>
+<!-- Person 2 -->
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<img alt="用户" class="w-10 h-10 rounded-full border border-white object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A portrait of a confident middle-aged woman wearing glasses and a light blazer. The lighting is professional yet soft, emphasizing a bright, trustworthy aesthetic fitting for a premium digital feed interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjy9F2spaCuXVNFsbQA3OV-xq3_D_aHed697ibS0JfB92Tg6j809zOnsf2bKmMmYrqeIfWaNNm0ympGjqJbH9xXKQFAdboyzS0CordhHdkjn7IkPl8qrouYIHYw8600T3WIc5vBGXygRxp6_z3z5fqQ3NUuUOUhDcEXY9xSQ_cXzldsBIpliCkfFqJaAqkhAahMB57RP2JphA2SpDMfQ2aAbBfzdRKnguiYGF_zuJx76lxhRvGZdHnftv9o6UeuZaj9T8aAVfWHXc">
+<div class="flex flex-col cursor-pointer">
+<span class="font-headline-md text-[14px] group-hover:text-primary transition-colors">Chen Zhiyuan</span>
+<span class="font-meta-xs text-on-surface-variant">界面设计师</span>
+</div>
+</div>
+<button class="glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300">关注</button>
+</div>
+<!-- Entity 3 -->
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-container text-white flex items-center justify-center font-display text-[18px] group-hover:scale-105 transition-transform duration-300 shadow-sm">A</div>
+<div class="flex flex-col cursor-pointer">
+<span class="font-headline-md text-[14px] group-hover:text-primary transition-colors">AI 前线</span>
+<span class="font-meta-xs text-on-surface-variant">科技媒体</span>
+</div>
+</div>
+<button class="glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300">关注</button>
+</div>
+</div>
+</div>
+<!-- Today's Analytics -->
+<div class="glass-panel rounded-3xl p-5 relative overflow-hidden hover-lift shine-effect group">
+</div></aside></div></div>
+
+
+
+<script>
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const feedTransitionTarget = document.querySelector('.feed-transition');
+
+requestAnimationFrame(() => {
+    feedTransitionTarget?.classList.add('feed-ready');
+});
+
+window.addEventListener('pageshow', () => {
+    feedTransitionTarget?.classList.remove('feed-leaving');
+    feedTransitionTarget?.classList.add('feed-ready');
+});
+
+document.querySelectorAll('.top-channel').forEach((channel) => {
+    channel.addEventListener('click', (event) => {
+        const href = channel.getAttribute('href');
+        if (href && href !== '#') {
+            return;
+        }
+        event.preventDefault();
+        document.querySelectorAll('.top-channel.active').forEach((item) => item.classList.remove('active'));
+        channel.classList.add('active');
+    });
+});
+
+document.querySelectorAll('a[href]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+        if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+            return;
+        }
+
+        const href = link.getAttribute('href');
+        if (!href || href === '#' || href.startsWith('#') || link.target === '_blank' || link.hasAttribute('download') || prefersReducedMotion) {
+            return;
+        }
+
+        const targetUrl = new URL(href, window.location.href);
+        if (targetUrl.href === window.location.href) {
+            return;
+        }
+
+        event.preventDefault();
+        if (feedTransitionTarget) {
+            feedTransitionTarget.classList.remove('feed-ready');
+            feedTransitionTarget.classList.add('feed-leaving');
+        }
+
+        window.setTimeout(() => {
+            window.location.href = targetUrl.href;
+        }, 190);
+    });
+});
+</script>
+</body></html>
