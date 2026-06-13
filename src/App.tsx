@@ -1,34 +1,29 @@
 import { useEffect, useState } from "react";
-import { parseLegacyDocument, resolveLegacyRoute } from "./legacy/legacyHtml";
-import type { ParsedLegacyDocument } from "./legacy/legacyHtml";
+import type { ComponentType } from "react";
+import { DetailPage } from "./pages/DetailPage";
+import { EditProfilePage } from "./pages/EditProfilePage";
+import { FollowingPage } from "./pages/FollowingPage";
+import { HomePage } from "./pages/HomePage";
+import { LiquidGlassFeedPage } from "./pages/LiquidGlassFeedPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { resolveLegacyRoute } from "./legacy/legacyHtml";
+import type { LegacyPageId } from "./legacy/legacyHtml";
 import "./styles/index.css";
 
-const pages = import.meta.glob("../legacy-html/*.html", {
-    query: "?raw",
-    import: "default"
-}) as Record<string, () => Promise<string>>;
+const pageComponents: Record<LegacyPageId, ComponentType> = {
+    home: HomePage,
+    following: FollowingPage,
+    profile: ProfilePage,
+    detail: DetailPage,
+    "edit-profile": EditProfilePage,
+    "liquid-glass-feed": LiquidGlassFeedPage
+};
 
 export function App() {
-    const route = resolveLegacyRoute(window.location.pathname);
-    const [loadedPage, setLoadedPage] = useState<LoadedLegacyPage | null>(null);
     const [revision, setRevision] = useState(0);
-    const routeKey = `${route}-${revision}`;
-
-    useEffect(() => {
-        let cancelled = false;
-        pages[`../legacy-html/${route}.html`]().then((source) => {
-            if (!cancelled) {
-                setLoadedPage({
-                    key: routeKey,
-                    page: parseLegacyDocument(source)
-                });
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [route, routeKey]);
+    const route = resolveLegacyRoute(window.location.pathname);
+    const Page = pageComponents[route];
+    const pageKey = `${route}-${window.location.search}-${revision}`;
 
     useEffect(() => {
         const onPopState = () => setRevision((current) => current + 1);
@@ -36,79 +31,48 @@ export function App() {
         return () => window.removeEventListener("popstate", onPopState);
     }, []);
 
-    if (!loadedPage || loadedPage.key !== routeKey) {
-        return null;
-    }
-
-    return <LegacyPage key={routeKey} page={loadedPage.page} />;
-}
-
-type LoadedLegacyPage = {
-    key: string;
-    page: ParsedLegacyDocument;
-};
-
-function LegacyPage({ page }: { page: ParsedLegacyDocument }) {
     useEffect(() => {
-        document.title = page.title;
-        document.documentElement.lang = "zh-CN";
-        document.documentElement.className = page.htmlClass || "light";
-        document.body.className = page.bodyClass;
+        const onClick = (event: MouseEvent) => {
+            const link = findClosestLink(event.target);
+            if (!link || !shouldHandleInternalNavigation(event, link)) {
+                return;
+            }
 
-        const styleElement = document.createElement("style");
-        styleElement.dataset.legacyPageStyle = "true";
-        styleElement.textContent = page.styles;
-        document.head.append(styleElement);
+            event.preventDefault();
+            event.stopImmediatePropagation();
 
-        ensureLegacyBrowserApis();
-        const cleanupScripts = page.scripts.map((script) => runLegacyScript(script));
-
-        void renderLucideIcons(page.markup);
-
-        return () => {
-            styleElement.remove();
-            cleanupScripts.forEach((cleanup) => cleanup());
+            const nextUrl = new URL(link.href);
+            if (nextUrl.href !== window.location.href) {
+                window.history.pushState({}, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+                window.dispatchEvent(new PopStateEvent("popstate"));
+            }
         };
-    }, [page]);
 
-    return (
-        <div
-            className="legacy-page"
-            dangerouslySetInnerHTML={{ __html: page.markup }}
-        />
-    );
+        document.addEventListener("click", onClick, true);
+        return () => document.removeEventListener("click", onClick, true);
+    }, []);
+
+    return <Page key={pageKey} />;
 }
 
-function runLegacyScript(source: string) {
-    const execute = new Function(source);
-    execute.call(window);
-
-    return () => undefined;
+function findClosestLink(target: EventTarget | null) {
+    return target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : null;
 }
 
-function ensureLegacyBrowserApis() {
-    if (typeof window.matchMedia !== "function") {
-        Object.defineProperty(window, "matchMedia", {
-            writable: true,
-            value: (query: string) => ({
-                matches: false,
-                media: query,
-                onchange: null,
-                addListener: () => undefined,
-                removeListener: () => undefined,
-                addEventListener: () => undefined,
-                removeEventListener: () => undefined,
-                dispatchEvent: () => false
-            })
-        });
-    }
-}
-
-async function renderLucideIcons(markup: string) {
-    if (!markup.includes("data-lucide")) {
-        return;
+function shouldHandleInternalNavigation(event: MouseEvent, link: HTMLAnchorElement) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        return false;
     }
 
-    const { createIcons, icons } = await import("lucide");
-    createIcons({ icons });
+    if (link.target === "_blank" || link.hasAttribute("download")) {
+        return false;
+    }
+
+    const href = link.getAttribute("href");
+    if (!href || href === "#" || href.startsWith("#")) {
+        return false;
+    }
+
+    const url = new URL(link.href);
+    return url.origin === window.location.origin && (url.pathname === "/" || url.pathname.endsWith(".html"));
 }

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { App } from "./App";
 
@@ -20,5 +20,20 @@ describe("App legacy routes", () => {
             expect(document.title).toBe("zfeed - Mira Chen");
         });
         expect(screen.getByText("编辑资料")).toBeInTheDocument();
+    });
+
+    it("opens legacy internal links inside the React app without a full page navigation", async () => {
+        window.history.pushState({}, "", "/");
+
+        render(<App />);
+
+        const profileLink = await screen.findByLabelText("进入我的主页");
+        fireEvent.click(profileLink);
+
+        await waitFor(() => {
+            expect(window.location.pathname).toBe("/profile.html");
+        });
+        expect(window.location.search).toBe("?user=me");
+        expect(await screen.findByText("编辑资料")).toBeInTheDocument();
     });
 });
