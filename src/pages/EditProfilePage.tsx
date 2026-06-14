@@ -7,7 +7,7 @@ export function EditProfilePage() {
     return createElement(
         PageShell,
         { title: "zfeed - 编辑资料", htmlClass: "light", bodyClass: "text-on-surface font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container", styles },
-        createElement("div", { "className": "legacy-page" },
+        createElement("div", { "className": "page-root" },
             createElement("header", { "className": "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
                 createElement("div", { "className": "flex items-center gap-4" },
                     createElement("button", { "className": "md:hidden p-2 text-on-surface-variant hover:bg-white/20 active:scale-95 rounded-full transition-all duration-300 ease-out" },
@@ -31,7 +31,7 @@ export function EditProfilePage() {
                     )
                 ),
                 createElement("nav", { "className": "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "following.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
                     createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
@@ -79,7 +79,7 @@ export function EditProfilePage() {
                     createElement("aside", { "className": "hidden lg:block lg:col-span-2 relative" },
                         createElement("div", { "className": "sticky top-24 w-full flex flex-col gap-8" },
                             createElement("nav", { "className": "flex flex-col gap-1" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "pasted-html-original-copy.html" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "home"
                                     ),
@@ -87,7 +87,7 @@ export function EditProfilePage() {
                                         "推荐"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "following.html" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/following" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "person_add"
                                     ),
@@ -162,7 +162,7 @@ export function EditProfilePage() {
                     createElement("main", { "className": "feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-4 pb-24 feed-ready" },
                         createElement("section", { "className": "flex items-center justify-between gap-4" },
                             createElement("div", null,
-                                createElement("a", { "className": "inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-3", "href": "profile.html?user=me" },
+                                createElement("a", { "className": "inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-3", "href": "/profile?user=me" },
                                     createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                         "arrow_back"
                                     ),
@@ -178,7 +178,7 @@ export function EditProfilePage() {
                                 )
                             ),
                             createElement("div", { "className": "flex gap-2" },
-                                createElement("a", { "className": "glass-button-ghost text-primary border-primary/20 font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300", "href": "profile.html?user=me" },
+                                createElement("a", { "className": "glass-button-ghost text-primary border-primary/20 font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300", "href": "/profile?user=me" },
                                     "取消"
                                 ),
                                 createElement("button", { "className": "glass-button-primary text-white font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300 flex items-center gap-2" },

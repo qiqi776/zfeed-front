@@ -7,7 +7,7 @@ export function LiquidGlassFeedPage() {
     return createElement(
         PageShell,
         { title: "Cirra Liquid Glass Feed", htmlClass: "light", bodyClass: "", styles },
-        createElement("div", { "className": "legacy-page" },
+        createElement("div", { "className": "page-root" },
             createElement("header", { "className": "topbar glass", "aria-label": "顶部导航" },
                 createElement("div", { "className": "topbar-inner" },
                     createElement("a", { "className": "brand", "href": "#", "aria-label": "Cirra 首页" },

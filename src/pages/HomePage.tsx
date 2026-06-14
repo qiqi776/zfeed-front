@@ -7,7 +7,7 @@ export function HomePage() {
     return createElement(
         PageShell,
         { title: "zfeed - 推荐信息流", htmlClass: "light", bodyClass: "text-on-surface font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container", styles },
-        createElement("div", { "className": "legacy-page" },
+        createElement("div", { "className": "page-root" },
             createElement("header", { "className": "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
                 createElement("div", { "className": "flex items-center gap-4" },
                     createElement("button", { "className": "md:hidden p-2 text-on-surface-variant hover:bg-white/20 active:scale-95 rounded-full transition-all duration-300 ease-out" },
@@ -31,7 +31,7 @@ export function HomePage() {
                     )
                 ),
                 createElement("nav", { "className": "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
-                    createElement("a", { "className": "top-channel active text-label-sm tracking-wide", "href": "following.html" },
+                    createElement("a", { "className": "top-channel active text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
                     createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
@@ -71,7 +71,7 @@ export function HomePage() {
                         ),
                         "\n                发布\n            "
                     ),
-                    createElement("a", { "aria-label": "进入我的主页", "href": "profile.html?user=me" },
+                    createElement("a", { "aria-label": "进入我的主页", "href": "/profile?user=me" },
                         createElement("img", { "alt": "用户头像", "className": "w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out", "data-alt": "A close-up portrait of a young woman with natural makeup, looking directly at the camera, set against a bright, well-lit background. The style is modern, crisp, and high-resolution, fitting a premium digital interface. Soft, even lighting highlights her features.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" })
                     )
                 )
@@ -89,7 +89,7 @@ export function HomePage() {
                                         "推荐"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "following.html" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/following" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "person_add"
                                     ),
@@ -202,11 +202,11 @@ export function HomePage() {
                             createElement("article", { "className": "glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect" },
                                 createElement("div", { "className": "flex items-center justify-between mb-4 relative z-20" },
                                     createElement("div", { "className": "flex items-center gap-3" },
-                                        createElement("a", { "aria-label": "进入 Jax Lee 的主页", "href": "profile.html?user=jax" },
+                                        createElement("a", { "aria-label": "进入 Jax Lee 的主页", "href": "/profile?user=jax" },
                                             createElement("img", { "alt": "Jax Lee", "className": "w-10 h-10 rounded-full border border-white shadow-sm object-cover hover:scale-105 transition-transform duration-300 cursor-pointer", "data-alt": "A professional headshot of a young male developer wearing glasses, subtly smiling, set against a clean, light grey backdrop. The lighting is soft and studio-quality, emphasizing a modern, tech-savvy persona appropriate for a premium digital feed.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuBvuOLVnsjO-1iiReceld4efYvN9a7XyG7mE_uVmZnyU5HQUUdi3pGNLEkV_gMctpfyY_uQpW1qggtG_XPtZ4WbDLLbxJwfLbR1mMxf4ScYzWLW4_Vfh6iXFQV12Xem2Mvj1GomjfPyq8QZe3lyDcVFglYAl-739LfayZUdFrHwVt00UvErzKDXUKy7XQVAgBYZ2Rb2qrl60hYui7qSt9fRHkJ3wECmeiMf1wBf5tUoiNvjt7ZIFO357kFzuiy4wKkSMa8GH4srd84" })
                                         ),
                                         createElement("div", null,
-                                            createElement("a", { "className": "flex items-center gap-1 cursor-pointer hover:text-primary transition-colors", "href": "profile.html?user=jax" },
+                                            createElement("a", { "className": "flex items-center gap-1 cursor-pointer hover:text-primary transition-colors", "href": "/profile?user=jax" },
                                                 createElement("span", { "className": "font-headline-md text-[16px]" },
                                                     "Jax Lee"
                                                 ),
@@ -231,7 +231,7 @@ export function HomePage() {
                                         )
                                     )
                                 ),
-                                createElement("a", { "className": "article-anchor", "href": "detail.html?type=article" },
+                                createElement("a", { "className": "article-anchor", "href": "/detail?type=article" },
                                     createElement("h2", { "className": "font-headline-md text-on-surface mb-2 relative z-20 hover:text-primary transition-colors cursor-pointer" },
                                         "用 AI 构建产品：30 天从 0 到 1"
                                     )
@@ -239,18 +239,18 @@ export function HomePage() {
                                 createElement("p", { "className": "font-body-md text-on-surface-variant mb-4 line-clamp-2 relative z-20" },
                                     "记录从 0 到 1 的完整过程，包括技术栈选择、产品思考和踩坑经验。希望能帮到正在构建产品的朋友。"
                                 ),
-                                createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "detail.html?type=article" },
+                                createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "/detail?type=article" },
                                     createElement("div", { "className": "absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none group-hover:from-white/30 transition-all duration-500 z-30" })
                                 ),
                                 createElement("div", { "className": "w-full md:w-[60%] h-48 bg-blue-50 relative overflow-hidden" },
-                                    createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "detail.html?type=article" },
+                                    createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "/detail?type=article" },
                                         createElement("div", { "className": "absolute inset-0 bg-gradient-to-br from-primary-container/20 to-secondary-container/20 mix-blend-multiply z-10" }),
                                         createElement("img", { "alt": "界面设计预览", "className": "w-full h-full object-cover mix-blend-overlay opacity-60 group-hover:scale-105 group-hover:opacity-80 transition-all duration-700 ease-out z-0", "data-alt": "A clean, abstract 3D render showing sleek, frosted glass UI panels floating over a soft blue and purple gradient background. The style is 'Soft Futurism', representing modern software interfaces with light refraction and drop shadows, extremely premium and serene.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuA0S66apkPGg5PkhicqKL7Obg8N7a-8vTWZLnvwN_fjwIK4owo0PljTZav2gyl0R5XQU83KcTggMt3BMRFacL2DqUdTpuGc9L4knns1TeCP1PgSHUzyYRNOWVR1WDQX-TSqjp4K9WWVY1_LqQ7iDuAe42gkgYOm1VK2He4ox-rUvXjibbH4Z_q2C7gZCC5wkAJzo_x6ArmavE0dcfdnhyFv-l2GjOQzw-Jtygcbb3HFOmMwebpUU72McgI51GjL_suZaxa0M_KpyHI" })
                                     ),
                                     createElement("div", { "className": "absolute inset-0 flex items-center justify-center p-6 z-20" },
-                                        createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "detail.html?type=article" }),
+                                        createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "/detail?type=article" }),
                                         createElement("div", { "className": "w-full h-full border border-white/30 rounded-xl bg-white/20 backdrop-blur-md flex flex-col p-4 shadow-lg transform rotate-[-2deg] group-hover:rotate-0 transition-transform duration-500" },
-                                            createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "detail.html?type=article" },
+                                            createElement("a", { "className": "glass-panel rounded-2xl overflow-hidden mb-4 border border-white/50 flex flex-col md:flex-row group cursor-pointer relative z-20 hover:shadow-md transition-all duration-300 article-anchor", "href": "/detail?type=article" },
                                                 createElement("div", { "className": "w-1/3 h-2 bg-white/50 rounded-full mb-4" }),
                                                 createElement("div", { "className": "w-full h-10 bg-white/40 rounded-lg mb-2" }),
                                                 createElement("div", { "className": "w-2/3 h-10 bg-white/40 rounded-lg" })
@@ -329,11 +329,11 @@ export function HomePage() {
                             createElement("article", { "className": "glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect" },
                                 createElement("div", { "className": "flex items-center justify-between mb-4 relative z-20" },
                                     createElement("div", { "className": "flex items-center gap-3" },
-                                        createElement("a", { "aria-label": "进入 Lin Xia 的主页", "href": "profile.html?user=lin" },
+                                        createElement("a", { "aria-label": "进入 Lin Xia 的主页", "href": "/profile?user=lin" },
                                             createElement("img", { "alt": "Lin Xia", "className": "w-10 h-10 rounded-full border border-white shadow-sm object-cover hover:scale-105 transition-transform duration-300 cursor-pointer", "data-alt": "A portrait of an elegant young Asian woman looking thoughtfully off-camera. She wears a minimalist top. The lighting is soft and natural, emphasizing a serene, intellectual vibe suitable for an AI researcher profile picture in a sleek app.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuBKH3U0AbExKb68Hpb-JJVI9QR_i52h0ee8yDQX67e9HRNk1hJ5BEGzaKTY0KejUgpHjQH8Ci6Sd0eMojgi03_UJeCawSjJ7LIrMet-EYXXjR9C_6fjZWyvL9RP0W-cSH0RxFq6ZCq0GqvLeyE2Cu3U3NMVcdIET7574HGB054ysNU21Btj1yYaONdSkkkzDGzmBxLljyhBbtLmlzuQyFPOkhQeOlF-AEu5Vdh4HbN4mlZ_VUuCR6pNHyCmSigDZaVbBWrVnnscafY" })
                                         ),
                                         createElement("div", null,
-                                            createElement("a", { "className": "flex items-center gap-1 cursor-pointer hover:text-primary transition-colors", "href": "profile.html?user=lin" },
+                                            createElement("a", { "className": "flex items-center gap-1 cursor-pointer hover:text-primary transition-colors", "href": "/profile?user=lin" },
                                                 createElement("span", { "className": "font-headline-md text-[16px]" },
                                                     "Lin Xia"
                                                 ),
@@ -358,7 +358,7 @@ export function HomePage() {
                                         )
                                     )
                                 ),
-                                createElement("a", { "className": "article-anchor", "href": "detail.html?type=video" },
+                                createElement("a", { "className": "article-anchor", "href": "/detail?type=video" },
                                     createElement("h2", { "className": "font-headline-md text-on-surface mb-2 relative z-20 hover:text-primary transition-colors cursor-pointer" },
                                         "创作工具的未来：AI 成为协作副驾"
                                     )
@@ -366,14 +366,14 @@ export function HomePage() {
                                 createElement("p", { "className": "font-body-md text-on-surface-variant mb-4 line-clamp-2 relative z-20" },
                                     "探索大模型在不同场景中的能力边界，以及我们如何与 AI 协作，而不是被它取代。深入拆解即将到来的工作流变化。"
                                 ),
-                                createElement("a", { "className": "relative rounded-2xl overflow-hidden mb-4 group cursor-pointer shadow-sm border border-white/40 hover:shadow-md transition-shadow duration-300 z-20 block article-anchor", "href": "detail.html?type=video" },
+                                createElement("a", { "className": "relative rounded-2xl overflow-hidden mb-4 group cursor-pointer shadow-sm border border-white/40 hover:shadow-md transition-shadow duration-300 z-20 block article-anchor", "href": "/detail?type=video" },
                                     createElement("img", { "alt": "视频缩略图", "className": "w-full h-64 object-cover transition-transform duration-700 group-hover:scale-105", "data-alt": "A modern, clean desk setup featuring a sleek laptop open to a complex software interface, perhaps a creative tool or code editor. Natural light pours in from a nearby window, casting soft shadows across a minimalist, uncluttered workspace. The mood is focused and productive.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuAz10wqckHxx_fzlly_PU5l8rUOYXrK49zrPaAqIMU0xo1pL5FpIbMsJNd_m7A8OKuBiVIUhp220quI7hfR4gbAQKD4vx512FpOEkn7NzJj4LcnXf_t_dqNdiFkqYX28jp5PwY1ikK5BwZSnPI3wvkfq6cj6rPCPhmfb2Wg1biVMZKA3OkCZJXGg3fivfbRSRYfEMgHG-UVrtjpUN5oP8vOlpJiuDq5P57RQwykerL3XY2IYPbAiHvNGXzzgugBOS5C4IQbcpzht0k" }),
                                     createElement("div", { "className": "absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" })
                                 ),
                                 createElement("div", { "className": "absolute inset-0 flex items-center justify-center" },
-                                    createElement("a", { "className": "relative rounded-2xl overflow-hidden mb-4 group cursor-pointer shadow-sm border border-white/40 hover:shadow-md transition-shadow duration-300 z-20 block article-anchor", "href": "detail.html?type=video" }),
+                                    createElement("a", { "className": "relative rounded-2xl overflow-hidden mb-4 group cursor-pointer shadow-sm border border-white/40 hover:shadow-md transition-shadow duration-300 z-20 block article-anchor", "href": "/detail?type=video" }),
                                     createElement("div", { "className": "w-16 h-16 rounded-full bg-white/30 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg transform group-hover:scale-110 active:scale-95 transition-all duration-300" },
-                                        createElement("a", { "className": "relative rounded-2xl overflow-hidden mb-4 group cursor-pointer shadow-sm border border-white/40 hover:shadow-md transition-shadow duration-300 z-20 block article-anchor", "href": "detail.html?type=video" },
+                                        createElement("a", { "className": "relative rounded-2xl overflow-hidden mb-4 group cursor-pointer shadow-sm border border-white/40 hover:shadow-md transition-shadow duration-300 z-20 block article-anchor", "href": "/detail?type=video" },
                                             createElement("span", { "className": "material-symbols-outlined text-white text-[32px]", "style": { "fontVariationSettings": "'FILL' 1" } },
                                                 "play_arrow"
                                             )

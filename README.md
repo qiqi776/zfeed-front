@@ -1,13 +1,13 @@
 # zfeed-front
 
-zfeed-front is a React migration of the original static zfeed HTML prototypes.
+zfeed-front is a React implementation of the zfeed prototype pages.
 
 ## Project Structure
 
-- `legacy-html/`: original HTML prototypes kept as visual references.
-- `src/`: React application shell and migration utilities.
-- `src/legacy/`: HTML parsing and legacy route compatibility helpers.
-- `src/styles/`: global Tailwind and compatibility styles.
+- `src/pages/`: page-level TSX components.
+- `src/routes/`: route helpers for the app's modern URL paths.
+- `src/runtime/`: shared page shell behavior such as document metadata, page styles, and delegated interactions.
+- `src/styles/`: global Tailwind styles.
 
 ## Development
 
@@ -16,11 +16,13 @@ npm install
 npm run dev
 ```
 
-The app keeps legacy URLs such as `/following.html`, `/profile.html?user=me`, and `/detail.html?type=article` working through the React entrypoint.
+The app opens the homepage at `/` and uses modern routes such as `/following`, `/profile?user=me`, and `/detail?type=article`.
 
 ## Verification
 
 ```bash
 npm test
+npm run lint
 npm run build
+npm run test:e2e
 ```

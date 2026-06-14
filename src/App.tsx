@@ -5,23 +5,25 @@ import { EditProfilePage } from "./pages/EditProfilePage";
 import { FollowingPage } from "./pages/FollowingPage";
 import { HomePage } from "./pages/HomePage";
 import { LiquidGlassFeedPage } from "./pages/LiquidGlassFeedPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProfilePage } from "./pages/ProfilePage";
-import { resolveLegacyRoute } from "./legacy/legacyHtml";
-import type { LegacyPageId } from "./legacy/legacyHtml";
+import { resolvePageRoute } from "./routes/pageRoutes";
+import type { PageId } from "./routes/pageRoutes";
 import "./styles/index.css";
 
-const pageComponents: Record<LegacyPageId, ComponentType> = {
+const pageComponents: Record<PageId, ComponentType> = {
     home: HomePage,
     following: FollowingPage,
     profile: ProfilePage,
     detail: DetailPage,
     "edit-profile": EditProfilePage,
-    "liquid-glass-feed": LiquidGlassFeedPage
+    "liquid-glass-feed": LiquidGlassFeedPage,
+    "not-found": NotFoundPage
 };
 
 export function App() {
     const [revision, setRevision] = useState(0);
-    const route = resolveLegacyRoute(window.location.pathname);
+    const route = resolvePageRoute(window.location.pathname);
     const Page = pageComponents[route];
     const pageKey = `${route}-${window.location.search}-${revision}`;
 
@@ -74,5 +76,5 @@ function shouldHandleInternalNavigation(event: MouseEvent, link: HTMLAnchorEleme
     }
 
     const url = new URL(link.href);
-    return url.origin === window.location.origin && (url.pathname === "/" || url.pathname.endsWith(".html"));
+    return url.origin === window.location.origin && (url.pathname === "/" || url.pathname === "/following" || url.pathname === "/profile" || url.pathname === "/detail" || url.pathname === "/edit-profile" || url.pathname === "/liquid-glass-feed");
 }

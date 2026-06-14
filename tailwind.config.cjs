@@ -3,7 +3,7 @@ const containerQueries = require("@tailwindcss/container-queries");
 
 module.exports = {
     darkMode: "class",
-    content: ["./index.html", "./src/**/*.{ts,tsx}", "./legacy-html/**/*.html"],
+    content: ["./index.html", "./src/**/*.{ts,tsx}"],
     theme: {
         extend: {
             colors: {

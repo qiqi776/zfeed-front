@@ -7,7 +7,7 @@ export function FollowingPage() {
     return createElement(
         PageShell,
         { title: "zfeed - 关注信息流", htmlClass: "light", bodyClass: "text-on-surface font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container", styles },
-        createElement("div", { "className": "legacy-page" },
+        createElement("div", { "className": "page-root" },
             createElement("header", { "className": "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
                 createElement("div", { "className": "flex items-center gap-4" },
                     createElement("button", { "className": "md:hidden p-2 text-on-surface-variant hover:bg-white/20 active:scale-95 rounded-full transition-all duration-300 ease-out" },
@@ -31,22 +31,22 @@ export function FollowingPage() {
                     )
                 ),
                 createElement("nav", { "className": "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
-                    createElement("a", { "className": "top-channel active text-label-sm tracking-wide", "href": "following.html" },
+                    createElement("a", { "className": "top-channel active text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "pasted-html-original-copy.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
                         "趋势"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "pasted-html-original-copy.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
                         "最新"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "pasted-html-original-copy.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
                         "AI"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "pasted-html-original-copy.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
                         "设计"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "pasted-html-original-copy.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
                         "科技"
                     )
                 ),
@@ -71,7 +71,7 @@ export function FollowingPage() {
                         ),
                         "\n                发布\n            "
                     ),
-                    createElement("a", { "aria-label": "进入我的主页", "href": "profile.html?user=me" },
+                    createElement("a", { "aria-label": "进入我的主页", "href": "/profile?user=me" },
                         createElement("img", { "alt": "用户头像", "className": "w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out", "data-alt": "A close-up portrait of a young woman with natural makeup, looking directly at the camera, set against a bright, well-lit background. The style is modern, crisp, and high-resolution, fitting a premium digital interface. Soft, even lighting highlights her features.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" })
                     )
                 )
@@ -81,7 +81,7 @@ export function FollowingPage() {
                     createElement("aside", { "className": "hidden lg:block lg:col-span-2 relative" },
                         createElement("div", { "className": "sticky top-24 w-full flex flex-col gap-8" },
                             createElement("nav", { "className": "flex flex-col gap-1" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "pasted-html-original-copy.html" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/" },
                                     createElement("span", { "className": "material-symbols-outlined", "style": { "fontVariationSettings": "'FILL' 1" } },
                                         "home"
                                     ),
@@ -89,7 +89,7 @@ export function FollowingPage() {
                                         "推荐"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 bg-white/60 dark:bg-black/60 text-primary font-bold rounded-lg p-2 shadow-sm ring-1 ring-inset ring-white/40 hover:scale-[1.02] active:scale-95 transition-all duration-300 ease-out", "href": "following.html" },
+                                createElement("a", { "className": "flex items-center gap-3 bg-white/60 dark:bg-black/60 text-primary font-bold rounded-lg p-2 shadow-sm ring-1 ring-inset ring-white/40 hover:scale-[1.02] active:scale-95 transition-all duration-300 ease-out", "href": "/following" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "person_add"
                                     ),

@@ -16,7 +16,7 @@ const variants: Record<string, PageVariant> = {
         title: "zfeed - 用 AI 构建产品：30 天从 0 到 1",
         htmlClass: "light",
         bodyClass: "text-on-surface font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container",
-        children: createElement("div", { "className": "legacy-page" },
+        children: createElement("div", { "className": "page-root" },
             createElement("header", { "className": "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
                 createElement("div", { "className": "flex items-center gap-4" },
                     createElement("button", { "className": "md:hidden p-2 text-on-surface-variant hover:bg-white/20 active:scale-95 rounded-full transition-all duration-300 ease-out" },
@@ -40,7 +40,7 @@ const variants: Record<string, PageVariant> = {
                     )
                 ),
                 createElement("nav", { "className": "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "following.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
                     createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
@@ -80,7 +80,7 @@ const variants: Record<string, PageVariant> = {
                         ),
                         "\n                发布\n            "
                     ),
-                    createElement("a", { "aria-label": "进入我的主页", "href": "profile.html?user=me" },
+                    createElement("a", { "aria-label": "进入我的主页", "href": "/profile?user=me" },
                         createElement("img", { "alt": "用户头像", "className": "w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out", "data-alt": "A close-up portrait of a young woman with natural makeup, looking directly at the camera, set against a bright, well-lit background. The style is modern, crisp, and high-resolution, fitting a premium digital interface. Soft, even lighting highlights her features.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" })
                     )
                 )
@@ -98,7 +98,7 @@ const variants: Record<string, PageVariant> = {
                                         "推荐"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "following.html" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/following" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "person_add"
                                     ),
@@ -172,7 +172,7 @@ const variants: Record<string, PageVariant> = {
                     ),
                     createElement("main", { "className": "feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-6 pb-24 feed-ready" },
                         createElement("section", { "className": "glass-panel rounded-3xl p-6 hover-lift shine-effect" },
-                            createElement("a", { "className": "inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-5", "href": "pasted-html-original-copy.html" },
+                            createElement("a", { "className": "inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-5", "href": "/" },
                                 createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                     "arrow_back"
                                 ),
@@ -198,7 +198,7 @@ const variants: Record<string, PageVariant> = {
                                 )
                             ),
                             createElement("div", { "className": "flex items-center justify-between gap-4 mt-6 pt-5 border-t border-white/30" },
-                                createElement("a", { "className": "flex items-center gap-3 group article-anchor", "href": "profile.html?user=jax" },
+                                createElement("a", { "className": "flex items-center gap-3 group article-anchor", "href": "/profile?user=jax" },
                                     createElement("img", { "alt": "Jax Lee", "className": "w-11 h-11 rounded-full border border-white object-cover shadow-sm group-hover:scale-105 transition-transform duration-300", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuBvuOLVnsjO-1iiReceld4efYvN9a7XyG7mE_uVmZnyU5HQUUdi3pGNLEkV_gMctpfyY_uQpW1qggtG_XPtZ4WbDLLbxJwfLbR1mMxf4ScYzWLW4_Vfh6iXFQV12Xem2Mvj1GomjfPyq8QZe3lyDcVFglYAl-739LfayZUdFrHwVt00UvErzKDXUKy7XQVAgBYZ2Rb2qrl60hYui7qSt9fRHkJ3wECmeiMf1wBf5tUoiNvjt7ZIFO357kFzuiy4wKkSMa8GH4srd84" }),
                                     createElement("div", null,
                                         createElement("div", { "className": "font-headline-md text-[16px] group-hover:text-primary transition-colors" },
@@ -647,7 +647,7 @@ const variants: Record<string, PageVariant> = {
         title: "zfeed - 创作工具的未来：AI 成为协作副驾",
         htmlClass: "light",
         bodyClass: "text-on-surface font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container",
-        children: createElement("div", { "className": "legacy-page" },
+        children: createElement("div", { "className": "page-root" },
             createElement("header", { "className": "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
                 createElement("div", { "className": "flex items-center gap-4" },
                     createElement("button", { "className": "md:hidden p-2 text-on-surface-variant hover:bg-white/20 active:scale-95 rounded-full transition-all duration-300 ease-out" },
@@ -671,7 +671,7 @@ const variants: Record<string, PageVariant> = {
                     )
                 ),
                 createElement("nav", { "className": "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "following.html" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
                     createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
@@ -711,7 +711,7 @@ const variants: Record<string, PageVariant> = {
                         ),
                         "\n                发布\n            "
                     ),
-                    createElement("a", { "aria-label": "进入我的主页", "href": "profile.html?user=me" },
+                    createElement("a", { "aria-label": "进入我的主页", "href": "/profile?user=me" },
                         createElement("img", { "alt": "用户头像", "className": "w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out", "data-alt": "A close-up portrait of a young woman with natural makeup, looking directly at the camera, set against a bright, well-lit background. The style is modern, crisp, and high-resolution, fitting a premium digital interface. Soft, even lighting highlights her features.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" })
                     )
                 )
@@ -729,7 +729,7 @@ const variants: Record<string, PageVariant> = {
                                         "推荐"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "following.html" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/following" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "person_add"
                                     ),
@@ -803,7 +803,7 @@ const variants: Record<string, PageVariant> = {
                     ),
                     createElement("main", { "className": "feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-6 pb-24 feed-ready" },
                         createElement("section", { "className": "glass-panel rounded-3xl p-6 hover-lift shine-effect" },
-                            createElement("a", { "className": "inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-5", "href": "pasted-html-original-copy.html" },
+                            createElement("a", { "className": "inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-5", "href": "/" },
                                 createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                     "arrow_back"
                                 ),
@@ -829,7 +829,7 @@ const variants: Record<string, PageVariant> = {
                                 )
                             ),
                             createElement("div", { "className": "flex items-center justify-between gap-4 mt-6 pt-5 border-t border-white/30" },
-                                createElement("a", { "className": "flex items-center gap-3 group article-anchor", "href": "profile.html?user=lin" },
+                                createElement("a", { "className": "flex items-center gap-3 group article-anchor", "href": "/profile?user=lin" },
                                     createElement("img", { "alt": "Lin Xia", "className": "w-11 h-11 rounded-full border border-white object-cover shadow-sm group-hover:scale-105 transition-transform duration-300", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuBKH3U0AbExKb68Hpb-JJVI9QR_i52h0ee8yDQX67e9HRNk1hJ5BEGzaKTY0KejUgpHjQH8Ci6Sd0eMojgi03_UJeCawSjJ7LIrMet-EYXXjR9C_6fjZWyvL9RP0W-cSH0RxFq6ZCq0GqvLeyE2Cu3U3NMVcdIET7574HGB054ysNU21Btj1yYaONdSkkkzDGzmBxLljyhBbtLmlzuQyFPOkhQeOlF-AEu5Vdh4HbN4mlZ_VUuCR6pNHyCmSigDZaVbBWrVnnscafY" }),
                                     createElement("div", null,
                                         createElement("div", { "className": "font-headline-md text-[16px] group-hover:text-primary transition-colors" },
