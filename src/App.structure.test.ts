@@ -18,6 +18,9 @@ describe("React page structure", () => {
 
         expect(files).toEqual(
             expect.arrayContaining([
+                "AuthGatewayPage.tsx",
+                "LoginPage.tsx",
+                "RegisterPage.tsx",
                 "HomePage.tsx",
                 "FollowingPage.tsx",
                 "ProfilePage.tsx",

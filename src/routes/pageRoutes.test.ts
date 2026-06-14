@@ -3,11 +3,14 @@ import { resolvePageRoute } from "./pageRoutes";
 
 describe("resolvePageRoute", () => {
     it("maps modern URLs to the intended source page", () => {
-        expect(resolvePageRoute("/")).toBe("home");
+        expect(resolvePageRoute("/")).toBe("auth-gateway");
+        expect(resolvePageRoute("/home")).toBe("home");
         expect(resolvePageRoute("/following")).toBe("following");
         expect(resolvePageRoute("/profile")).toBe("profile");
         expect(resolvePageRoute("/detail")).toBe("detail");
         expect(resolvePageRoute("/edit-profile")).toBe("edit-profile");
+        expect(resolvePageRoute("/login")).toBe("login");
+        expect(resolvePageRoute("/register")).toBe("register");
         expect(resolvePageRoute("/liquid-glass-feed")).toBe("liquid-glass-feed");
     });
 

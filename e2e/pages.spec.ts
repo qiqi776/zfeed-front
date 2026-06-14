@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 const routes = [
-    ["/", "用 AI 构建产品：30 天从 0 到 1"],
+    ["/", "登录或注册 zfeed"],
+    ["/home", "用 AI 构建产品：30 天从 0 到 1"],
     ["/following", "我关注的创作者今天都在用 AI 重构工作流"],
+    ["/login", "登录 zfeed"],
+    ["/register", "创建 zfeed 账号"],
     ["/profile?user=me", "Mira Chen"],
     ["/profile?user=jax", "Jax Lee"],
     ["/detail?type=article", "用 AI 构建产品：30 天从 0 到 1"],
@@ -20,7 +23,7 @@ for (const [route, text] of routes) {
 }
 
 test("captures stable desktop and mobile feed screenshots", async ({ page }, testInfo) => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/home", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("用 AI 构建产品：30 天从 0 到 1").first()).toBeVisible();
 
     await page.screenshot({
