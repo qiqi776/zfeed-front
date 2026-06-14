@@ -13,6 +13,13 @@ describe("React page structure", () => {
         expect(appSource).not.toContain("import.meta.glob");
     });
 
+    it("keeps route pages lazy-loaded instead of statically bundled", () => {
+        const appSource = readFileSync(join(root, "src/App.tsx"), "utf8");
+
+        expect(appSource).toContain("lazy(");
+        expect(appSource).not.toMatch(/import \{ \w+Page \} from "\.\/pages\//);
+    });
+
     it("keeps every migrated page as a TSX component", async () => {
         const files = await readdir(join(root, "src/pages"));
 

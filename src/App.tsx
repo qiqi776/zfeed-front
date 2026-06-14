@@ -1,36 +1,23 @@
-import { useEffect, useState } from "react";
-import type { ComponentType } from "react";
-import { AuthGatewayPage } from "./pages/AuthGatewayPage";
-import { ComposePage } from "./pages/ComposePage";
-import { DetailPage } from "./pages/DetailPage";
-import { EditProfilePage } from "./pages/EditProfilePage";
-import { FollowingPage } from "./pages/FollowingPage";
-import { HomePage } from "./pages/HomePage";
-import { LiquidGlassFeedPage } from "./pages/LiquidGlassFeedPage";
-import { LoginPage } from "./pages/LoginPage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { RegisterPage } from "./pages/RegisterPage";
-import { SearchPage } from "./pages/SearchPage";
-import { SettingsPage } from "./pages/SettingsPage";
+import { lazy, Suspense, useEffect, useState } from "react";
+import type { ComponentType, LazyExoticComponent } from "react";
 import { resolvePageRoute } from "./routes/pageRoutes";
 import type { PageId } from "./routes/pageRoutes";
 import "./styles/index.css";
 
-const pageComponents: Record<PageId, ComponentType> = {
-    "auth-gateway": AuthGatewayPage,
-    home: HomePage,
-    following: FollowingPage,
-    profile: ProfilePage,
-    detail: DetailPage,
-    "edit-profile": EditProfilePage,
-    search: SearchPage,
-    compose: ComposePage,
-    settings: SettingsPage,
-    login: LoginPage,
-    register: RegisterPage,
-    "liquid-glass-feed": LiquidGlassFeedPage,
-    "not-found": NotFoundPage
+const pageComponents: Record<PageId, LazyExoticComponent<ComponentType>> = {
+    "auth-gateway": lazy(() => import("./pages/AuthGatewayPage").then((module) => ({ default: module.AuthGatewayPage }))),
+    home: lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage }))),
+    following: lazy(() => import("./pages/FollowingPage").then((module) => ({ default: module.FollowingPage }))),
+    profile: lazy(() => import("./pages/ProfilePage").then((module) => ({ default: module.ProfilePage }))),
+    detail: lazy(() => import("./pages/DetailPage").then((module) => ({ default: module.DetailPage }))),
+    "edit-profile": lazy(() => import("./pages/EditProfilePage").then((module) => ({ default: module.EditProfilePage }))),
+    search: lazy(() => import("./pages/SearchPage").then((module) => ({ default: module.SearchPage }))),
+    compose: lazy(() => import("./pages/ComposePage").then((module) => ({ default: module.ComposePage }))),
+    settings: lazy(() => import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage }))),
+    login: lazy(() => import("./pages/LoginPage").then((module) => ({ default: module.LoginPage }))),
+    register: lazy(() => import("./pages/RegisterPage").then((module) => ({ default: module.RegisterPage }))),
+    "liquid-glass-feed": lazy(() => import("./pages/LiquidGlassFeedPage").then((module) => ({ default: module.LiquidGlassFeedPage }))),
+    "not-found": lazy(() => import("./pages/NotFoundPage").then((module) => ({ default: module.NotFoundPage })))
 };
 
 export function App() {
@@ -66,7 +53,15 @@ export function App() {
         return () => document.removeEventListener("click", onClick, true);
     }, []);
 
-    return <Page key={pageKey} />;
+    return (
+        <Suspense fallback={<RouteLoading />}>
+            <Page key={pageKey} />
+        </Suspense>
+    );
+}
+
+function RouteLoading() {
+    return <div className="min-h-screen bg-[#eef2f6] px-6 py-8 text-[14px] text-slate-500">正在加载...</div>;
 }
 
 function findClosestLink(target: EventTarget | null) {
