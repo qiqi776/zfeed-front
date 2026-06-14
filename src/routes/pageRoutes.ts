@@ -13,6 +13,7 @@ export type PageId =
 const routeMap: Record<string, PageId> = {
     "/": "auth-gateway",
     "/home": "home",
+    "/me": "profile",
     "/following": "following",
     "/profile": "profile",
     "/detail": "detail",

@@ -86,6 +86,7 @@ function shouldHandleInternalNavigation(event: MouseEvent, link: HTMLAnchorEleme
         url.origin === window.location.origin &&
         (url.pathname === "/" ||
             url.pathname === "/home" ||
+            url.pathname === "/me" ||
             url.pathname === "/following" ||
             url.pathname === "/profile" ||
             url.pathname === "/detail" ||

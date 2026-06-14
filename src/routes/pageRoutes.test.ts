@@ -5,6 +5,7 @@ describe("resolvePageRoute", () => {
     it("maps modern URLs to the intended source page", () => {
         expect(resolvePageRoute("/")).toBe("auth-gateway");
         expect(resolvePageRoute("/home")).toBe("home");
+        expect(resolvePageRoute("/me")).toBe("profile");
         expect(resolvePageRoute("/following")).toBe("following");
         expect(resolvePageRoute("/profile")).toBe("profile");
         expect(resolvePageRoute("/detail")).toBe("detail");

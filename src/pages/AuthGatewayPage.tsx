@@ -1,8 +1,58 @@
-import { createElement } from "react";
+import { createElement, useEffect, useState } from "react";
 import { PageShell } from "../runtime/PageShell";
+import { getMe } from "../runtime/apiClient";
+import { clearAuthSession, readAuthSession, saveAuthSession } from "../runtime/authStore";
+import type { AuthSession } from "../runtime/authStore";
+import { navigateTo } from "../runtime/navigation";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 export function AuthGatewayPage() {
+    const [sessionToRestore] = useState<AuthSession | null>(() => readAuthSession());
+    const isRestoring = sessionToRestore !== null;
+
+    useEffect(() => {
+        if (!sessionToRestore) {
+            return;
+        }
+
+        let isActive = true;
+
+        getMe<{
+            user_info: {
+                user_id: number;
+                nickname: string;
+                avatar: string;
+            };
+        }>()
+            .then((response) => {
+                if (!isActive) {
+                    return;
+                }
+
+                saveAuthSession({
+                    ...sessionToRestore,
+                    user: {
+                        userId: response.user_info.user_id,
+                        nickname: response.user_info.nickname,
+                        avatar: response.user_info.avatar
+                    }
+                });
+                navigateTo("/home");
+            })
+            .catch(() => {
+                if (!isActive) {
+                    return;
+                }
+
+                clearAuthSession();
+                navigateTo("/home");
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [sessionToRestore]);
+
     return createElement(
         PageShell,
         {
@@ -67,10 +117,10 @@ export function AuthGatewayPage() {
                     createElement("div", { className: "mt-7" },
                         createElement("h1", {
                             className: "font-display text-[34px] leading-tight text-on-surface md:text-[38px]"
-                        }, "登录或注册 zfeed"),
+                        }, isRestoring ? "正在恢复 zfeed 会话" : "登录或注册 zfeed"),
                         createElement("p", {
                             className: "mt-3 text-[15px] leading-7 text-on-surface-variant"
-                        }, "首页已经准备好，登录后继续你的信息流；也可以先以游客身份浏览公开内容。")
+                        }, isRestoring ? "如果登录状态失效，会自动进入游客首页。" : "首页已经准备好，登录后继续你的信息流；也可以先以游客身份浏览公开内容。")
                     ),
                     createElement("div", { className: "mt-7 grid gap-3 sm:grid-cols-2" },
                         createElement("a", {

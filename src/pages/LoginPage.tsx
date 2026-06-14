@@ -1,8 +1,22 @@
-import { createElement } from "react";
+import { createElement, useState } from "react";
 import { PageShell } from "../runtime/PageShell";
+import { login as loginRequest } from "../runtime/apiClient";
+import { saveAuthSession } from "../runtime/authStore";
+import { navigateTo } from "../runtime/navigation";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
+type LoginErrors = {
+    phone?: string;
+    password?: string;
+    form?: string;
+};
+
 export function LoginPage() {
+    const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
+    const [errors, setErrors] = useState<LoginErrors>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     return createElement(
         PageShell,
         {
@@ -47,9 +61,63 @@ export function LoginPage() {
                             className: "mt-2 text-[15px] leading-7 text-on-surface-variant"
                         }, "返回内容流，继续你上次停下的地方。")
                     ),
-                    createElement("form", { className: "mt-6 grid gap-4" },
-                        renderField("手机号", "phone", "tel", "请输入手机号", "tel"),
-                        renderField("密码", "password", "password", "请输入密码", "current-password"),
+                    errors.form
+                        ? createElement("div", { className: "mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700" }, errors.form)
+                        : null,
+                    createElement("form", {
+                        className: "mt-6 grid gap-4",
+                        noValidate: true,
+                        onSubmit: async (event) => {
+                            event.preventDefault();
+                            const nextErrors: LoginErrors = {};
+
+                            if (!phone.trim()) {
+                                nextErrors.phone = "请输入手机号";
+                            }
+
+                            if (!password.trim()) {
+                                nextErrors.password = "请输入密码";
+                            }
+
+                            if (Object.keys(nextErrors).length > 0) {
+                                setErrors(nextErrors);
+                                return;
+                            }
+
+                            setIsSubmitting(true);
+                            setErrors({});
+
+                            try {
+                                const response = await loginRequest<{
+                                    user_id: number;
+                                    token: string;
+                                    expired_at: number;
+                                    nickname: string;
+                                    avatar: string;
+                                }>({
+                                    mobile: phone.trim(),
+                                    password
+                                });
+
+                                saveAuthSession({
+                                    token: response.token,
+                                    expiredAt: response.expired_at,
+                                    user: {
+                                        userId: response.user_id,
+                                        nickname: response.nickname,
+                                        avatar: response.avatar
+                                    }
+                                });
+                                navigateTo("/home");
+                            } catch {
+                                setErrors({ form: "手机号或密码不正确" });
+                            } finally {
+                                setIsSubmitting(false);
+                            }
+                        }
+                    },
+                        renderField("手机号", "phone", "tel", "请输入手机号", "tel", phone, setPhone, errors.phone),
+                        renderField("密码", "password", "password", "请输入密码", "current-password", password, setPassword, errors.password),
                         createElement("div", { className: "flex items-center justify-between gap-3 pt-1" },
                             createElement("a", {
                                 className: "text-label-sm text-primary",
@@ -57,9 +125,10 @@ export function LoginPage() {
                             }, "先浏览内容"),
                             createElement("button", {
                                 className:
-                                    "glass-button-primary inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-5 py-3 text-white font-label-sm",
-                                type: "button"
-                            }, "登录")
+                                    "glass-button-primary inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-5 py-3 text-white font-label-sm disabled:opacity-70 disabled:cursor-not-allowed",
+                                disabled: isSubmitting,
+                                type: "submit"
+                            }, isSubmitting ? "登录中" : "登录")
                         )
                     ),
                     createElement("div", { className: "mt-6 flex items-center justify-between gap-4 border-t border-white/30 pt-4" },
@@ -81,7 +150,10 @@ function renderField(
     id: string,
     type: string,
     placeholder: string,
-    autoComplete?: string
+    autoComplete: string,
+    value: string,
+    onValueChange: (value: string) => void,
+    error?: string
 ) {
     return createElement("label", { className: "flex flex-col gap-2" },
         createElement("span", { className: "auth-label" }, label),
@@ -92,7 +164,11 @@ function renderField(
             placeholder,
             type,
             autoComplete,
-            inputMode: type === "tel" ? "tel" : undefined
-        })
+            inputMode: type === "tel" ? "tel" : undefined,
+            "aria-invalid": Boolean(error),
+            value,
+            onChange: (event) => onValueChange(event.target.value)
+        }),
+        error ? createElement("span", { className: "text-[12px] text-red-600" }, error) : null
     );
 }

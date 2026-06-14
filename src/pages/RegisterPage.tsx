@@ -1,8 +1,30 @@
-import { createElement } from "react";
+import { createElement, type ChangeEvent, useState } from "react";
 import { PageShell } from "../runtime/PageShell";
+import { register as registerRequest } from "../runtime/apiClient";
+import { saveAuthSession } from "../runtime/authStore";
+import { navigateTo } from "../runtime/navigation";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
+type RegisterErrors = {
+    phone?: string;
+    password?: string;
+    nickname?: string;
+    avatarUrl?: string;
+    email?: string;
+    bio?: string;
+    form?: string;
+};
+
 export function RegisterPage() {
+    const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
+    const [nickname, setNickname] = useState("");
+    const [avatarUrl, setAvatarUrl] = useState("");
+    const [email, setEmail] = useState("");
+    const [bio, setBio] = useState("");
+    const [errors, setErrors] = useState<RegisterErrors>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     return createElement(
         PageShell,
         {
@@ -47,12 +69,84 @@ export function RegisterPage() {
                             className: "mt-2 text-[15px] leading-7 text-on-surface-variant"
                         }, "注册后就能继续浏览、关注和发布。")
                     ),
-                    createElement("form", { className: "mt-6 grid gap-4" },
-                        renderField("手机号", "phone", "tel", "请输入手机号", "tel"),
-                        renderField("密码", "password", "password", "请输入密码", "new-password"),
-                        renderField("昵称", "nickname", "text", "可选"),
-                        renderField("头像 URL", "avatarUrl", "url", "可选"),
-                        renderField("邮箱", "email", "email", "可选", "email"),
+                    errors.form
+                        ? createElement("div", { className: "mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700" }, errors.form)
+                        : null,
+                    createElement("form", {
+                        className: "mt-6 grid gap-4",
+                        noValidate: true,
+                        onSubmit: async (event) => {
+                            event.preventDefault();
+                            const nextErrors: RegisterErrors = {};
+
+                            if (!phone.trim()) {
+                                nextErrors.phone = "请输入手机号";
+                            }
+
+                            if (!password.trim()) {
+                                nextErrors.password = "请输入密码";
+                            }
+
+                            if (nickname.length > 64) {
+                                nextErrors.nickname = "昵称最多 64 字";
+                            }
+
+                            if (bio.length > 255) {
+                                nextErrors.bio = "简介最多 255 字";
+                            }
+
+                            if (email && !isValidEmail(email)) {
+                                nextErrors.email = "请输入有效邮箱";
+                            }
+
+                            if (avatarUrl && !isLikelyUrl(avatarUrl)) {
+                                nextErrors.avatarUrl = "请输入有效头像链接";
+                            }
+
+                            if (Object.keys(nextErrors).length > 0) {
+                                setErrors(nextErrors);
+                                return;
+                            }
+
+                            setIsSubmitting(true);
+                            setErrors({});
+
+                            try {
+                                const response = await registerRequest<{
+                                    user_id: number;
+                                    token: string;
+                                    expired_at: number;
+                                }>({
+                                    mobile: phone.trim(),
+                                    password,
+                                    nickname: nickname.trim() || undefined,
+                                    avatar: avatarUrl.trim() || undefined,
+                                    email: email.trim() || undefined,
+                                    bio: bio.trim() || undefined
+                                });
+
+                                saveAuthSession({
+                                    token: response.token,
+                                    expiredAt: response.expired_at,
+                                    user: {
+                                        userId: response.user_id,
+                                        nickname: nickname.trim() || undefined,
+                                        avatar: avatarUrl.trim() || undefined
+                                    }
+                                });
+                                navigateTo("/me");
+                            } catch {
+                                setErrors({ form: "注册失败，请检查信息后重试" });
+                            } finally {
+                                setIsSubmitting(false);
+                            }
+                        }
+                    },
+                        renderField("手机号", "phone", "tel", "请输入手机号", "tel", phone, setPhone, errors.phone),
+                        renderField("密码", "password", "password", "请输入密码", "new-password", password, setPassword, errors.password),
+                        renderField("昵称", "nickname", "text", "可选", "nickname", nickname, setNickname, errors.nickname),
+                        renderField("头像 URL", "avatarUrl", "url", "可选", "url", avatarUrl, setAvatarUrl, errors.avatarUrl),
+                        renderField("邮箱", "email", "email", "可选", "email", email, setEmail, errors.email),
                         createElement("label", { className: "flex flex-col gap-2" },
                             createElement("span", { className: "auth-label" }, "简介"),
                             createElement("textarea", {
@@ -61,8 +155,12 @@ export function RegisterPage() {
                                 id: "bio",
                                 name: "bio",
                                 placeholder: "可选",
-                                rows: 4
-                            })
+                                rows: 4,
+                                "aria-invalid": Boolean(errors.bio),
+                                value: bio,
+                                onChange: (event: ChangeEvent<HTMLTextAreaElement>) => setBio(event.target.value)
+                            }),
+                            errors.bio ? createElement("span", { className: "text-[12px] text-red-600" }, errors.bio) : null
                         ),
                         createElement("div", { className: "flex items-center justify-between gap-3 pt-1" },
                             createElement("a", {
@@ -71,9 +169,10 @@ export function RegisterPage() {
                             }, "先浏览内容"),
                             createElement("button", {
                                 className:
-                                    "glass-button-primary inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-5 py-3 text-white font-label-sm",
-                                type: "button"
-                            }, "注册")
+                                    "glass-button-primary inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-5 py-3 text-white font-label-sm disabled:opacity-70 disabled:cursor-not-allowed",
+                                disabled: isSubmitting,
+                                type: "submit"
+                            }, isSubmitting ? "注册中" : "注册")
                         )
                     ),
                     createElement("div", { className: "mt-6 border-t border-white/30 pt-4" },
@@ -94,7 +193,10 @@ function renderField(
     id: string,
     type: string,
     placeholder: string,
-    autoComplete?: string
+    autoComplete: string,
+    value: string,
+    onValueChange: (value: string) => void,
+    error?: string
 ) {
     return createElement("label", { className: "flex flex-col gap-2" },
         createElement("span", { className: "auth-label" }, label),
@@ -105,7 +207,24 @@ function renderField(
             placeholder,
             type,
             autoComplete,
-            inputMode: type === "tel" ? "tel" : undefined
-        })
+            inputMode: type === "tel" ? "tel" : undefined,
+            "aria-invalid": Boolean(error),
+            value,
+            onChange: (event) => onValueChange(event.target.value)
+        }),
+        error ? createElement("span", { className: "text-[12px] text-red-600" }, error) : null
     );
+}
+
+function isValidEmail(value: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isLikelyUrl(value: string) {
+    try {
+        new URL(value);
+        return true;
+    } catch {
+        return false;
+    }
 }
