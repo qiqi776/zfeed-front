@@ -43,19 +43,19 @@ const variants: Record<string, PageVariant> = {
                     createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "趋势"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "最新"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "AI"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "设计"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "科技"
                     )
                 ),
@@ -88,7 +88,7 @@ const variants: Record<string, PageVariant> = {
                     createElement("aside", { "className": "hidden lg:block lg:col-span-2 relative" },
                         createElement("div", { "className": "sticky top-24 w-full flex flex-col gap-8" },
                             createElement("nav", { "className": "flex flex-col gap-1" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "home"
                                     ),
@@ -104,7 +104,7 @@ const variants: Record<string, PageVariant> = {
                                         "关注"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "trending_up"
                                     ),
@@ -112,7 +112,7 @@ const variants: Record<string, PageVariant> = {
                                         "趋势"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "bookmark"
                                     ),
@@ -125,7 +125,7 @@ const variants: Record<string, PageVariant> = {
                                 createElement("span", { "className": "font-meta-xs text-on-surface-variant/70 uppercase tracking-wider px-3 mb-1" },
                                     "频道"
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center text-blue-600 font-label-sm transition-colors duration-300" },
                                         "A"
                                     ),
@@ -133,7 +133,7 @@ const variants: Record<string, PageVariant> = {
                                         "AI 与机器学习"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600 font-label-sm transition-colors duration-300" },
                                         "D"
                                     ),
@@ -141,7 +141,7 @@ const variants: Record<string, PageVariant> = {
                                         "设计与灵感"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center text-purple-600 font-label-sm transition-colors duration-300" },
                                         "P"
                                     ),
@@ -157,7 +157,7 @@ const variants: Record<string, PageVariant> = {
                                 )
                             ),
                             createElement("div", { "className": "mt-auto flex flex-col gap-1 border-t border-white/40 pt-4" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "settings"
                                     ),
@@ -208,7 +208,7 @@ const variants: Record<string, PageVariant> = {
                                             ),
                                             "\n                    发布\n                "
                                         ),
-                                        createElement("a", { "className": "glass-button-ghost text-primary border-primary/20 font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300", "href": "/edit-profile?user=me" },
+                                        createElement("a", { "className": "glass-button-ghost text-primary border-primary/20 font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300", "href": "/me/edit" },
                                             "\n                    编辑资料\n                "
                                         )
                                     )
@@ -643,19 +643,19 @@ const variants: Record<string, PageVariant> = {
                     createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "趋势"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "最新"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "AI"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "设计"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "科技"
                     )
                 ),
@@ -688,7 +688,7 @@ const variants: Record<string, PageVariant> = {
                     createElement("aside", { "className": "hidden lg:block lg:col-span-2 relative" },
                         createElement("div", { "className": "sticky top-24 w-full flex flex-col gap-8" },
                             createElement("nav", { "className": "flex flex-col gap-1" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "home"
                                     ),
@@ -704,7 +704,7 @@ const variants: Record<string, PageVariant> = {
                                         "关注"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "trending_up"
                                     ),
@@ -712,7 +712,7 @@ const variants: Record<string, PageVariant> = {
                                         "趋势"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "bookmark"
                                     ),
@@ -725,7 +725,7 @@ const variants: Record<string, PageVariant> = {
                                 createElement("span", { "className": "font-meta-xs text-on-surface-variant/70 uppercase tracking-wider px-3 mb-1" },
                                     "频道"
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center text-blue-600 font-label-sm transition-colors duration-300" },
                                         "A"
                                     ),
@@ -733,7 +733,7 @@ const variants: Record<string, PageVariant> = {
                                         "AI 与机器学习"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600 font-label-sm transition-colors duration-300" },
                                         "D"
                                     ),
@@ -741,7 +741,7 @@ const variants: Record<string, PageVariant> = {
                                         "设计与灵感"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center text-purple-600 font-label-sm transition-colors duration-300" },
                                         "P"
                                     ),
@@ -757,7 +757,7 @@ const variants: Record<string, PageVariant> = {
                                 )
                             ),
                             createElement("div", { "className": "mt-auto flex flex-col gap-1 border-t border-white/40 pt-4" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "settings"
                                     ),
@@ -1235,19 +1235,19 @@ const variants: Record<string, PageVariant> = {
                     createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "趋势"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "最新"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "AI"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "设计"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "#" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "科技"
                     )
                 ),
@@ -1280,7 +1280,7 @@ const variants: Record<string, PageVariant> = {
                     createElement("aside", { "className": "hidden lg:block lg:col-span-2 relative" },
                         createElement("div", { "className": "sticky top-24 w-full flex flex-col gap-8" },
                             createElement("nav", { "className": "flex flex-col gap-1" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "home"
                                     ),
@@ -1296,7 +1296,7 @@ const variants: Record<string, PageVariant> = {
                                         "关注"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "trending_up"
                                     ),
@@ -1304,7 +1304,7 @@ const variants: Record<string, PageVariant> = {
                                         "趋势"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "bookmark"
                                     ),
@@ -1317,7 +1317,7 @@ const variants: Record<string, PageVariant> = {
                                 createElement("span", { "className": "font-meta-xs text-on-surface-variant/70 uppercase tracking-wider px-3 mb-1" },
                                     "频道"
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center text-blue-600 font-label-sm transition-colors duration-300" },
                                         "A"
                                     ),
@@ -1325,7 +1325,7 @@ const variants: Record<string, PageVariant> = {
                                         "AI 与机器学习"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600 font-label-sm transition-colors duration-300" },
                                         "D"
                                     ),
@@ -1333,7 +1333,7 @@ const variants: Record<string, PageVariant> = {
                                         "设计与灵感"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center text-purple-600 font-label-sm transition-colors duration-300" },
                                         "P"
                                     ),
@@ -1349,7 +1349,7 @@ const variants: Record<string, PageVariant> = {
                                 )
                             ),
                             createElement("div", { "className": "mt-auto flex flex-col gap-1 border-t border-white/40 pt-4" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "settings"
                                     ),
@@ -1799,7 +1799,7 @@ const variants: Record<string, PageVariant> = {
 };
 
 export function ProfilePage() {
-    const profileKey = new URLSearchParams(window.location.search).get("user") ?? "me";
+    const profileKey = parseProfileKey(window.location.pathname, window.location.search);
     const variant = variants[profileKey] ?? variants["me"];
 
     return createElement(
@@ -1807,4 +1807,14 @@ export function ProfilePage() {
         { title: variant.title, htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
         variant.children
     );
+}
+
+function parseProfileKey(pathname: string, search: string) {
+    const fromPath = pathname.startsWith("/user/") ? pathname.split("/")[2] : null;
+    if (fromPath) {
+        return fromPath;
+    }
+
+    const profileKey = new URLSearchParams(search).get("user") ?? "me";
+    return profileKey;
 }

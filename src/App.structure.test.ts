@@ -26,6 +26,9 @@ describe("React page structure", () => {
                 "ProfilePage.tsx",
                 "DetailPage.tsx",
                 "EditProfilePage.tsx",
+                "SearchPage.tsx",
+                "ComposePage.tsx",
+                "SettingsPage.tsx",
                 "LiquidGlassFeedPage.tsx"
             ])
         );
@@ -42,5 +45,20 @@ describe("React page structure", () => {
             expect(source).not.toContain("dangerouslySetInnerHTML");
             expect(source).not.toContain("new Function");
         }
+    });
+
+    it("does not keep placeholder hash links in migrated pages", async () => {
+        const pageFiles = await readdir(join(root, "src/pages"));
+        const sources = pageFiles.map((file) => ({
+            file,
+            source: readFileSync(join(root, "src/pages", file), "utf8")
+        }));
+
+        const offenders = sources
+            .filter(({ file }) => file !== "LiquidGlassFeedPage.tsx")
+            .filter(({ source }) => source.includes('"href": "#"') || source.includes('href: "#"'))
+            .map(({ file }) => file);
+
+        expect(offenders).toEqual([]);
     });
 });

@@ -5,6 +5,9 @@ export type PageId =
     | "profile"
     | "detail"
     | "edit-profile"
+    | "search"
+    | "compose"
+    | "settings"
     | "login"
     | "register"
     | "liquid-glass-feed"
@@ -15,14 +18,23 @@ const routeMap: Record<string, PageId> = {
     "/home": "home",
     "/me": "profile",
     "/following": "following",
-    "/profile": "profile",
-    "/detail": "detail",
-    "/edit-profile": "edit-profile",
+    "/me/edit": "edit-profile",
+    "/search": "search",
+    "/compose": "compose",
+    "/settings": "settings",
     "/login": "login",
     "/register": "register",
     "/liquid-glass-feed": "liquid-glass-feed"
 };
 
 export function resolvePageRoute(pathname: string): PageId {
+    if (/^\/user\/[^/]+$/.test(pathname)) {
+        return "profile";
+    }
+
+    if (/^\/content\/[^/]+$/.test(pathname)) {
+        return "detail";
+    }
+
     return routeMap[pathname] ?? "not-found";
 }

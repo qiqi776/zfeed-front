@@ -34,19 +34,19 @@ export function FollowingPage() {
                     createElement("a", { "className": "top-channel active text-label-sm tracking-wide", "href": "/following" },
                         "关注"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "趋势"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "最新"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "AI"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "设计"
                     ),
-                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/" },
+                    createElement("a", { "className": "top-channel text-label-sm tracking-wide", "href": "/home" },
                         "科技"
                     )
                 ),
@@ -71,7 +71,7 @@ export function FollowingPage() {
                         ),
                         "\n                发布\n            "
                     ),
-                    createElement("a", { "aria-label": "进入我的主页", "href": "/profile?user=me" },
+                    createElement("a", { "aria-label": "进入我的主页", "href": "/me" },
                         createElement("img", { "alt": "用户头像", "className": "w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out", "data-alt": "A close-up portrait of a young woman with natural makeup, looking directly at the camera, set against a bright, well-lit background. The style is modern, crisp, and high-resolution, fitting a premium digital interface. Soft, even lighting highlights her features.", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" })
                     )
                 )
@@ -81,7 +81,7 @@ export function FollowingPage() {
                     createElement("aside", { "className": "hidden lg:block lg:col-span-2 relative" },
                         createElement("div", { "className": "sticky top-24 w-full flex flex-col gap-8" },
                             createElement("nav", { "className": "flex flex-col gap-1" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined", "style": { "fontVariationSettings": "'FILL' 1" } },
                                         "home"
                                     ),
@@ -97,7 +97,7 @@ export function FollowingPage() {
                                         "关注"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "trending_up"
                                     ),
@@ -105,7 +105,7 @@ export function FollowingPage() {
                                         "趋势"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "bookmark"
                                     ),
@@ -118,7 +118,7 @@ export function FollowingPage() {
                                 createElement("span", { "className": "font-meta-xs text-on-surface-variant/70 uppercase tracking-wider px-3 mb-1" },
                                     "频道"
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center text-blue-600 font-label-sm transition-colors duration-300" },
                                         "A"
                                     ),
@@ -126,7 +126,7 @@ export function FollowingPage() {
                                         "AI 与机器学习"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600 font-label-sm transition-colors duration-300" },
                                         "D"
                                     ),
@@ -134,7 +134,7 @@ export function FollowingPage() {
                                         "设计与灵感"
                                     )
                                 ),
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", "href": "/home" },
                                     createElement("div", { "className": "w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center text-purple-600 font-label-sm transition-colors duration-300" },
                                         "P"
                                     ),
@@ -150,7 +150,7 @@ export function FollowingPage() {
                                 )
                             ),
                             createElement("div", { "className": "mt-auto flex flex-col gap-1 border-t border-white/40 pt-4" },
-                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "#" },
+                                createElement("a", { "className": "flex items-center gap-3 text-on-surface-variant p-3 nav-link-hover active:scale-95", "href": "/home" },
                                     createElement("span", { "className": "material-symbols-outlined" },
                                         "settings"
                                     ),

@@ -101,8 +101,8 @@ describe("App routes", () => {
         expect(await screen.findByText("我关注的创作者今天都在用 AI 重构工作流")).toBeInTheDocument();
     });
 
-    it("renders the profile route with the user query", async () => {
-        window.history.pushState({}, "", "/profile?user=me");
+    it("renders the me route", async () => {
+        window.history.pushState({}, "", "/me");
 
         render(<App />);
 
@@ -112,14 +112,45 @@ describe("App routes", () => {
         expect(screen.getByText("编辑资料")).toBeInTheDocument();
     });
 
-    it("points the profile edit action at the edit profile route", async () => {
-        window.history.pushState({}, "", "/profile?user=me");
+    it("points the profile edit action at the modern edit profile route", async () => {
+        window.history.pushState({}, "", "/me");
 
         render(<App />);
 
         const editProfileLink = await screen.findByRole("link", { name: "编辑资料" });
 
-        expect(editProfileLink).toHaveAttribute("href", "/edit-profile?user=me");
+        expect(editProfileLink).toHaveAttribute("href", "/me/edit");
+    });
+
+    it("renders user, content, search, compose, settings, and edit routes", async () => {
+        window.history.pushState({}, "", "/user/jax");
+        const { unmount } = render(<App />);
+        expect(await screen.findByRole("heading", { name: "Jax Lee" })).toBeInTheDocument();
+        unmount();
+
+        window.history.pushState({}, "", "/content/article-1");
+        render(<App />);
+        expect(await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" })).toBeInTheDocument();
+        unmount();
+
+        window.history.pushState({}, "", "/search");
+        render(<App />);
+        expect(await screen.findByRole("heading", { name: "搜索" })).toBeInTheDocument();
+        unmount();
+
+        window.history.pushState({}, "", "/compose");
+        render(<App />);
+        expect(await screen.findByRole("heading", { name: "发布" })).toBeInTheDocument();
+        unmount();
+
+        window.history.pushState({}, "", "/settings");
+        render(<App />);
+        expect(await screen.findByRole("heading", { name: "设置" })).toBeInTheDocument();
+        unmount();
+
+        window.history.pushState({}, "", "/me/edit");
+        render(<App />);
+        expect(await screen.findByRole("heading", { name: "编辑资料" })).toBeInTheDocument();
     });
 
     it("renders the login route with the required fields", async () => {
@@ -260,6 +291,74 @@ describe("App routes", () => {
         });
     });
 
+    it("opens compose from the primary publish button", async () => {
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        fireEvent.click(await screen.findByRole("button", { name: /发布/ }));
+
+        await waitFor(() => expect(window.location.pathname).toBe("/compose"));
+        expect(await screen.findByRole("heading", { name: "发布" })).toBeInTheDocument();
+    });
+
+    it("opens search from the global search box", async () => {
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const searchBox = await screen.findByPlaceholderText("搜索内容、创作者或话题");
+        fireEvent.change(searchBox, { target: { value: "AI 创作" } });
+        fireEvent.keyDown(searchBox, { key: "Enter" });
+
+        await waitFor(() => expect(window.location.pathname).toBe("/search"));
+        expect(window.location.search).toBe("?q=AI+%E5%88%9B%E4%BD%9C");
+    });
+
+    it("guides unauthenticated write actions to login without calling the API", async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const likeButton = (await screen.findAllByText("favorite"))[0].closest("button");
+        expect(likeButton).not.toBeNull();
+        fireEvent.click(likeButton!);
+
+        await waitFor(() => expect(window.location.pathname).toBe("/login"));
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("uses Bearer writes for liked content and rolls back when the API fails", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "write-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ message: "raw failure" }, { status: 500 }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const likeButton = (await screen.findAllByText("favorite"))[0].closest("button");
+        expect(likeButton).not.toBeNull();
+        expect(likeButton).toHaveClass("text-error");
+
+        fireEvent.click(likeButton!);
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/unlike", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer write-token"
+            }),
+            body: JSON.stringify({ contentId: "article-1" })
+        })));
+        await waitFor(() => expect(likeButton).toHaveClass("text-error"));
+        expect(screen.queryByText("raw failure")).not.toBeInTheDocument();
+    });
+
     it("opens internal links inside the React app without a full page navigation", async () => {
         window.history.pushState({}, "", "/home");
 
@@ -269,9 +368,9 @@ describe("App routes", () => {
         fireEvent.click(profileLink);
 
         await waitFor(() => {
-            expect(window.location.pathname).toBe("/profile");
+            expect(window.location.pathname).toBe("/me");
         });
-        expect(window.location.search).toBe("?user=me");
+        expect(window.location.search).toBe("");
         expect(await screen.findByText("编辑资料")).toBeInTheDocument();
     });
 

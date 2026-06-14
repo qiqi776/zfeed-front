@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-The app opens the auth gateway at `/`, with a frosted-home backdrop and direct links to `/login` and `/register`. The recommend feed lives at `/home`, with modern routes such as `/following`, `/profile?user=me`, and `/detail?type=article`.
+The app opens the auth gateway at `/`, with a frosted-home backdrop and direct links to `/login` and `/register`. The recommend feed lives at `/home`, with product routes such as `/following`, `/me`, `/user/:userId`, `/content/:contentId`, `/me/edit`, `/search`, `/compose`, and `/settings`.
 
 ## Verification
 

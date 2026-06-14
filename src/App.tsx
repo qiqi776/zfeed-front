@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { AuthGatewayPage } from "./pages/AuthGatewayPage";
+import { ComposePage } from "./pages/ComposePage";
 import { DetailPage } from "./pages/DetailPage";
 import { EditProfilePage } from "./pages/EditProfilePage";
 import { FollowingPage } from "./pages/FollowingPage";
@@ -10,6 +11,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { SearchPage } from "./pages/SearchPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { resolvePageRoute } from "./routes/pageRoutes";
 import type { PageId } from "./routes/pageRoutes";
 import "./styles/index.css";
@@ -21,6 +24,9 @@ const pageComponents: Record<PageId, ComponentType> = {
     profile: ProfilePage,
     detail: DetailPage,
     "edit-profile": EditProfilePage,
+    search: SearchPage,
+    compose: ComposePage,
+    settings: SettingsPage,
     login: LoginPage,
     register: RegisterPage,
     "liquid-glass-feed": LiquidGlassFeedPage,
@@ -87,10 +93,13 @@ function shouldHandleInternalNavigation(event: MouseEvent, link: HTMLAnchorEleme
         (url.pathname === "/" ||
             url.pathname === "/home" ||
             url.pathname === "/me" ||
+            url.pathname === "/me/edit" ||
             url.pathname === "/following" ||
-            url.pathname === "/profile" ||
-            url.pathname === "/detail" ||
-            url.pathname === "/edit-profile" ||
+            url.pathname.startsWith("/user/") ||
+            url.pathname.startsWith("/content/") ||
+            url.pathname === "/search" ||
+            url.pathname === "/compose" ||
+            url.pathname === "/settings" ||
             url.pathname === "/login" ||
             url.pathname === "/register" ||
             url.pathname === "/liquid-glass-feed")
