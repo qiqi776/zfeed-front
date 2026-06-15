@@ -226,8 +226,8 @@ function isValidEmail(value: string) {
 
 function isLikelyUrl(value: string) {
     try {
-        new URL(value);
-        return true;
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
     } catch {
         return false;
     }

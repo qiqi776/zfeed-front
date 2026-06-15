@@ -336,6 +336,7 @@ describe("App routes", () => {
         render(<App />);
 
         fireEvent.change(await screen.findByLabelText("昵称"), { target: { value: "a".repeat(65) } });
+        fireEvent.change(screen.getByLabelText("头像 URL"), { target: { value: "javascript:alert(1)" } });
         fireEvent.change(screen.getByLabelText("邮箱"), { target: { value: "bad-email" } });
         fireEvent.change(screen.getByLabelText("简介"), { target: { value: "b".repeat(256) } });
         fireEvent.click(screen.getByRole("button", { name: "注册" }));
@@ -343,6 +344,7 @@ describe("App routes", () => {
         expect(await screen.findByText("请输入手机号")).toBeInTheDocument();
         expect(screen.getByText("请输入密码")).toBeInTheDocument();
         expect(screen.getByText("昵称最多 64 字")).toBeInTheDocument();
+        expect(screen.getByText("请输入有效头像链接")).toBeInTheDocument();
         expect(screen.getByText("请输入有效邮箱")).toBeInTheDocument();
         expect(screen.getByText("简介最多 255 字")).toBeInTheDocument();
         expect(fetchMock).not.toHaveBeenCalled();
