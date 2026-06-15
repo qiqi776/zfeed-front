@@ -100,6 +100,14 @@ test("requires auth for the following route", async ({ page }) => {
     await expect(page.locator("[data-page-state='auth-required']")).toBeVisible();
 });
 
+test("does not fall back unknown user routes to the me profile", async ({ page }) => {
+    await page.goto("/user/unknown", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText("用户不存在", { exact: true })).toBeVisible();
+    await expect(page.locator("[data-page-state='error']")).toBeVisible();
+    await expect(page.getByText("编辑资料")).toHaveCount(0);
+});
+
 async function seedAuthSession(page: Page) {
     await page.addInitScript(() => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({

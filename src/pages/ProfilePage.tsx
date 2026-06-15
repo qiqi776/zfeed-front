@@ -1802,7 +1802,29 @@ const variants: Record<string, PageVariant> = {
 
 export function ProfilePage() {
     const profileKey = parseProfileKey(window.location.pathname, window.location.search);
-    const variant = variants[profileKey] ?? variants["me"];
+    const fallbackVariant = variants["me"];
+    const variant = variants[profileKey];
+
+    if (!variant) {
+        return createElement(
+            PageShell,
+            { title: "zfeed - 用户不存在", htmlClass: fallbackVariant.htmlClass, bodyClass: fallbackVariant.bodyClass, styles },
+            createElement("div", { className: "page-root" },
+                createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
+                    createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-3xl rounded-[28px] p-6 md:p-8" },
+                        createElement("a", { className: "text-label-sm text-primary", href: "/home" }, "返回首页"),
+                        createElement(PageState, {
+                            state: "error",
+                            title: "用户不存在",
+                            description: "这个用户不存在或已不可访问。",
+                            actionHref: "/home",
+                            actionLabel: "返回首页"
+                        })
+                    )
+                )
+            )
+        );
+    }
 
     if (profileKey === "me" && !readAuthSession()) {
         return createElement(

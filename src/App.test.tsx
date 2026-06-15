@@ -198,6 +198,13 @@ describe("App routes", () => {
         expect(await screen.findByRole("heading", { name: "Jax Lee" })).toBeInTheDocument();
         unmount();
 
+        window.history.pushState({}, "", "/user/unknown");
+        render(<App />);
+        const unknownUserState = await screen.findByText("用户不存在");
+        expect(unknownUserState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("编辑资料")).not.toBeInTheDocument();
+        unmount();
+
         window.history.pushState({}, "", "/content/article-1");
         render(<App />);
         expect(await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" })).toBeInTheDocument();
