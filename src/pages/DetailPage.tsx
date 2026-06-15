@@ -321,7 +321,7 @@ const variants: Record<string, PageVariant> = {
                                     createElement("img", { "alt": "当前用户", "className": "w-10 h-10 rounded-full border border-white object-cover shadow-sm", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" }),
                                     createElement("div", { "className": "flex-1" },
                                         createElement("div", { "className": "composer-shell" },
-                                            createElement("input", { "className": "w-full bg-transparent border-none text-body-md focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300", "placeholder": "写下你的观点，补充或提问...", "type": "text" })
+                                            createElement("input", { "className": "w-full bg-transparent border-none text-body-md focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300", "maxLength": 255, "placeholder": "写下你的观点，补充或提问...", "type": "text" })
                                         ),
                                         createElement("div", { "className": "flex items-center justify-between mt-3" },
                                             createElement("div", { "className": "flex gap-2 text-on-surface-variant" },
@@ -974,7 +974,7 @@ const variants: Record<string, PageVariant> = {
                                     createElement("img", { "alt": "当前用户", "className": "w-10 h-10 rounded-full border border-white object-cover shadow-sm", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" }),
                                     createElement("div", { "className": "flex-1" },
                                         createElement("div", { "className": "composer-shell" },
-                                            createElement("input", { "className": "w-full bg-transparent border-none text-body-md focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300", "placeholder": "写下你的观点，补充或提问...", "type": "text" })
+                                            createElement("input", { "className": "w-full bg-transparent border-none text-body-md focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300", "maxLength": 255, "placeholder": "写下你的观点，补充或提问...", "type": "text" })
                                         ),
                                         createElement("div", { "className": "flex items-center justify-between mt-3" },
                                             createElement("div", { "className": "flex gap-2 text-on-surface-variant" },

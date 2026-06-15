@@ -23,6 +23,8 @@ type PageShellProps = {
     children?: ReactNode;
 };
 
+const maxCommentLength = 255;
+
 export function PageShell({ title, htmlClass, bodyClass, styles, children }: PageShellProps) {
     useEffect(() => {
         document.title = title;
@@ -244,6 +246,11 @@ function handleCommentSubmitClick(event: MouseEvent) {
         return;
     }
 
+    if (comment.length > maxCommentLength) {
+        showInlineStatus(button, "评论最多 255 字", "error");
+        return;
+    }
+
     if (!readAuthSession()) {
         navigateToLogin();
         return;
@@ -341,7 +348,7 @@ function handleReplySubmitClick(event: MouseEvent) {
         return;
     }
 
-    if (comment.length > 255) {
+    if (comment.length > maxCommentLength) {
         showInlineStatus(button, "回复最多 255 字", "error");
         return;
     }
@@ -739,7 +746,7 @@ function createReplyComposer(authorName: string) {
     input.className = "w-full bg-transparent border-none text-body-md focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300";
     input.placeholder = `回复 ${authorName}...`;
     input.type = "text";
-    input.maxLength = 255;
+    input.maxLength = maxCommentLength;
 
     const actions = document.createElement("div");
     actions.className = "flex items-center justify-end gap-2 mt-3";

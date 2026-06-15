@@ -653,6 +653,26 @@ describe("App routes", () => {
         })));
     });
 
+    it("validates content comment length before calling the API", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "comment-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        const composer = await screen.findByPlaceholderText("写下你的观点，补充或提问...");
+        fireEvent.change(composer, { target: { value: "评".repeat(256) } });
+        fireEvent.click(screen.getByRole("button", { name: "发送" }));
+
+        expect(await screen.findByText("评论最多 255 字")).toBeInTheDocument();
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("disables the comment submit button while the request is pending", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "comment-token",
