@@ -8,6 +8,8 @@ type RequestOptions = {
 
 type ContentActionBody = {
     contentId: string;
+    contentUserId?: string;
+    scene?: "content";
 };
 
 type FollowUserBody = {
@@ -153,19 +155,19 @@ export function publishArticle<T>(body: PublishArticleBody) {
 }
 
 export function likeContent<T = unknown>(body: ContentActionBody) {
-    return apiRequest<T>("/v1/interaction/like", { method: "POST", body, auth: true });
+    return apiRequest<T>("/v1/interaction/like", { method: "POST", body: toContentActionPayload(body, true), auth: true });
 }
 
 export function unlikeContent<T = unknown>(body: ContentActionBody) {
-    return apiRequest<T>("/v1/interaction/unlike", { method: "POST", body, auth: true });
+    return apiRequest<T>("/v1/interaction/unlike", { method: "POST", body: toContentActionPayload(body), auth: true });
 }
 
 export function favoriteContent<T = unknown>(body: ContentActionBody) {
-    return apiRequest<T>("/v1/interaction/favorite", { method: "POST", body, auth: true });
+    return apiRequest<T>("/v1/interaction/favorite", { method: "POST", body: toContentActionPayload(body), auth: true });
 }
 
 export function unfavoriteContent<T = unknown>(body: ContentActionBody) {
-    return apiRequest<T>("/v1/interaction/favorite", { method: "DELETE", body, auth: true });
+    return apiRequest<T>("/v1/interaction/favorite", { method: "DELETE", body: toContentActionPayload(body), auth: true });
 }
 
 export function commentContent<T = unknown>(body: CommentBody) {
@@ -182,4 +184,12 @@ export function followUser<T = unknown>(body: FollowUserBody) {
 
 export function unfollowUser<T = unknown>(body: FollowUserBody) {
     return apiRequest<T>("/v1/interaction/followings", { method: "DELETE", body, auth: true });
+}
+
+function toContentActionPayload(body: ContentActionBody, includeContentUser = false) {
+    return {
+        content_id: body.contentId,
+        ...(includeContentUser && body.contentUserId ? { content_user_id: body.contentUserId } : {}),
+        scene: body.scene ?? "content"
+    };
 }

@@ -3,9 +3,13 @@ import {
     ApiError,
     apiRequest,
     authorizedFetch,
+    commentContent,
+    deleteComment,
     favoriteContent,
     getApiBaseUrl,
-    likeContent
+    likeContent,
+    unlikeContent,
+    unfavoriteContent
 } from "./apiClient";
 import { saveAuthSession } from "./authStore";
 
@@ -78,6 +82,43 @@ describe("apiClient", () => {
             message: "请先登录后再操作"
         });
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("serializes interaction write helpers with documented backend field names", async () => {
+        saveAuthSession({
+            token: "write-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        const fetchMock = vi.fn(async () => jsonResponse({}));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await likeContent({ contentId: "1001", contentUserId: "2001", scene: "content" });
+        await unlikeContent({ contentId: "1001", scene: "content" });
+        await favoriteContent({ contentId: "1001", scene: "content" });
+        await unfavoriteContent({ contentId: "1001", scene: "content" });
+        await commentContent({ content_id: "1001", scene: "content", comment: "hello", content_user_id: "2001" });
+        await deleteComment({ comment_id: "3001", content_id: "1001", scene: "content" });
+
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/interaction/like", expect.objectContaining({
+            body: JSON.stringify({ content_id: "1001", content_user_id: "2001", scene: "content" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/v1/interaction/unlike", expect.objectContaining({
+            body: JSON.stringify({ content_id: "1001", scene: "content" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(3, "/v1/interaction/favorite", expect.objectContaining({
+            body: JSON.stringify({ content_id: "1001", scene: "content" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(4, "/v1/interaction/favorite", expect.objectContaining({
+            method: "DELETE",
+            body: JSON.stringify({ content_id: "1001", scene: "content" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(5, "/v1/interaction/comment", expect.objectContaining({
+            body: JSON.stringify({ content_id: "1001", scene: "content", comment: "hello", content_user_id: "2001" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(6, "/v1/interaction/comment", expect.objectContaining({
+            method: "DELETE",
+            body: JSON.stringify({ comment_id: "3001", content_id: "1001", scene: "content" })
+        }));
     });
 
     it("normalizes backend and network errors without exposing raw backend messages", async () => {

@@ -353,7 +353,7 @@ describe("App routes", () => {
             headers: expect.objectContaining({
                 Authorization: "Bearer write-token"
             }),
-            body: JSON.stringify({ contentId: "article-1" })
+            body: JSON.stringify({ content_id: "1001", scene: "content" })
         })));
         await waitFor(() => expect(likeButton).toHaveClass("text-error"));
         expect(screen.queryByText("raw failure")).not.toBeInTheDocument();

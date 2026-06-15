@@ -144,6 +144,7 @@ function handleActionClick(event: MouseEvent) {
     if (!contentId) {
         return;
     }
+    const contentUserId = resolveContentUserId(button);
 
     if (!readAuthSession()) {
         navigateToLogin();
@@ -155,7 +156,7 @@ function handleActionClick(event: MouseEvent) {
     applyOptimisticState(button, action);
 
     const request = action.kind === "like"
-        ? action.nextActive ? likeContent({ contentId }) : unlikeContent({ contentId })
+        ? action.nextActive ? likeContent({ contentId, contentUserId }) : unlikeContent({ contentId })
         : action.nextActive ? favoriteContent({ contentId }) : unfavoriteContent({ contentId });
 
     request.catch((error: unknown) => {
@@ -594,12 +595,24 @@ function resolveContentId(button: HTMLElement) {
     }
 
     if (window.location.pathname.startsWith("/content/")) {
-        return window.location.pathname.split("/")[2] ?? "";
+        return mapRouteIdToApiId(window.location.pathname.split("/")[2] ?? "");
     }
 
     const container = button.closest("article, section, main") ?? document;
     const contentLink = container.querySelector<HTMLAnchorElement>('a[href^="/content/"]');
-    return contentLink?.getAttribute("href")?.split("/")[2] ?? "";
+    return mapRouteIdToApiId(contentLink?.getAttribute("href")?.split("/")[2] ?? "");
+}
+
+function resolveContentUserId(button: HTMLElement) {
+    const explicitId = button.dataset.contentUserId;
+    if (explicitId) {
+        return explicitId;
+    }
+
+    const container = button.closest("article, section, main") ?? document;
+    const authorLink = container.querySelector<HTMLAnchorElement>('a[href^="/user/"]');
+    const routeId = authorLink?.getAttribute("href")?.split("/")[2] ?? "";
+    return mapRouteIdToApiId(routeId) || resolveContentUserIdFromPath();
 }
 
 function resolveTargetUserId(button: HTMLElement) {
