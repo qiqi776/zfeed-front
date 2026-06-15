@@ -25,6 +25,9 @@ for (const [route, text] of routes) {
         if (route === "/me") {
             await mockMeProfile(page);
         }
+        if (route === "/user/jax") {
+            await mockUserProfile(page);
+        }
         if (route === "/home") {
             await mockRecommendFeed(page);
         }
@@ -111,6 +114,7 @@ test("requires auth for the following route", async ({ page }) => {
 });
 
 test("does not fall back unknown user routes to the me profile", async ({ page }) => {
+    await mockMissingUserProfile(page);
     await page.goto("/user/unknown", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByText("用户不存在", { exact: true })).toBeVisible();
@@ -207,6 +211,43 @@ async function mockMeProfile(page: Page) {
                 favorite_received_count: 912,
                 content_count: 128
             })
+        });
+    });
+}
+
+async function mockUserProfile(page: Page) {
+    await page.route("**/v1/user/profile/jax", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                user_info: {
+                    user_id: 1001,
+                    mobile: "",
+                    nickname: "Jax Lee",
+                    avatar: "",
+                    bio: "AI 产品作者，关注创作者工具和高质量信息流体验。",
+                    gender: 0,
+                    status: 1,
+                    email: "",
+                    birthday: 0
+                },
+                followee_count: 18,
+                follower_count: 2400,
+                like_received_count: 1200,
+                favorite_received_count: 300,
+                content_count: 16,
+                is_following: false
+            })
+        });
+    });
+}
+
+async function mockMissingUserProfile(page: Page) {
+    await page.route("**/v1/user/profile/unknown", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            status: 404,
+            body: JSON.stringify({})
         });
     });
 }

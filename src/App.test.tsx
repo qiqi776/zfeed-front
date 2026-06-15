@@ -66,6 +66,27 @@ function meProfilePayload(overrides: Record<string, unknown> = {}) {
     };
 }
 
+function userProfilePayload(overrides: Record<string, unknown> = {}) {
+    return {
+        user_info: {
+            user_id: 1001,
+            nickname: "Jax Lee",
+            avatar: "https://example.com/jax.png",
+            bio: "AI 产品作者",
+            mobile: "",
+            email: "",
+            ...(overrides.user_info as Record<string, unknown> | undefined)
+        },
+        followee_count: 18,
+        follower_count: 2400,
+        like_received_count: 1200,
+        favorite_received_count: 300,
+        content_count: 16,
+        is_following: false,
+        ...overrides
+    };
+}
+
 describe("App routes", () => {
     beforeEach(() => {
         window.localStorage.clear();
@@ -425,12 +446,20 @@ describe("App routes", () => {
     });
 
     it("renders user, content, search, compose, settings, and edit routes", async () => {
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return jsonResponse(userProfilePayload());
+            }
+
+            return jsonResponse({});
+        }));
         window.history.pushState({}, "", "/user/jax");
         const { unmount } = render(<App />);
         expect(await screen.findByRole("heading", { name: "Jax Lee" })).toBeInTheDocument();
         unmount();
 
         window.history.pushState({}, "", "/user/unknown");
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, { status: 404 })));
         render(<App />);
         const unknownUserState = await screen.findByText("用户不存在");
         expect(unknownUserState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
@@ -461,6 +490,58 @@ describe("App routes", () => {
         window.history.pushState({}, "", "/me/edit");
         render(<App />);
         expect(await screen.findByRole("heading", { name: "编辑资料" })).toBeInTheDocument();
+    });
+
+    it("loads a user profile from the API without executing user content", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "reader-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse(userProfilePayload({
+            user_info: {
+                user_id: 1001,
+                nickname: "接口作者 <script>alert(1)</script>",
+                avatar: "https://example.com/author.png",
+                bio: "接口返回的作者简介"
+            },
+            followee_count: 5,
+            follower_count: 21,
+            like_received_count: 34,
+            favorite_received_count: 8,
+            content_count: 13,
+            is_following: true
+        })));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "接口作者 <script>alert(1)</script>" })).toBeInTheDocument();
+        expect(screen.getByText("接口返回的作者简介")).toBeInTheDocument();
+        expect(screen.getAllByText("13").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("5").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("21").length).toBeGreaterThan(0);
+        expect(screen.getByRole("button", { name: "已关注" })).toHaveAttribute("data-user-id", "1001");
+        expect(document.querySelector("script")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/user/profile/jax", expect.objectContaining({
+            method: "GET",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            })
+        }));
+    });
+
+    it("shows an error state when a user profile cannot be loaded", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ message: "raw profile failure" }, { status: 500 })));
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        const errorState = await screen.findByText("用户主页加载失败");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("raw profile failure")).not.toBeInTheDocument();
+        expect(screen.queryByText("Jax Lee")).not.toBeInTheDocument();
     });
 
     it("loads numeric content detail from the API without executing user content", async () => {
@@ -1057,7 +1138,13 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({ is_followed: true }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return jsonResponse(userProfilePayload());
+            }
+
+            return jsonResponse({ is_followed: true });
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/user/jax");
 
@@ -1067,6 +1154,11 @@ describe("App routes", () => {
         fireEvent.click(followButton);
 
         expect(await screen.findByRole("button", { name: "已关注" })).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/user/profile/jax", expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: "Bearer follow-token"
+            })
+        }));
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/followings", expect.objectContaining({
             method: "POST",
             headers: expect.objectContaining({
@@ -1083,9 +1175,15 @@ describe("App routes", () => {
             user: { userId: 7 }
         }));
         let resolveFollow!: (response: Response) => void;
-        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
-            resolveFollow = resolve;
-        }));
+        const fetchMock = vi.fn((input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return Promise.resolve(jsonResponse(userProfilePayload()));
+            }
+
+            return new Promise<Response>((resolve) => {
+                resolveFollow = resolve;
+            });
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/user/jax");
 
@@ -1095,7 +1193,7 @@ describe("App routes", () => {
         fireEvent.click(followButton);
 
         expect(await screen.findByRole("button", { name: "已关注" })).toBeDisabled();
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
 
         resolveFollow(jsonResponse({ is_followed: true }));
         await waitFor(() => expect(followButton).not.toBeDisabled());

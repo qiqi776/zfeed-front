@@ -1,6 +1,6 @@
 import { createElement, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { getMe } from "../runtime/apiClient";
+import { ApiError, getMe, getUserProfile } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
 import { PageState } from "./PageState";
@@ -44,6 +44,21 @@ type MeProfileState =
     | { status: "auth-required" }
     | { status: "loading" }
     | { status: "ready"; profile: MeProfile }
+    | { status: "error" };
+
+type UserProfileResponse = MeProfileResponse & {
+    is_following?: boolean;
+};
+
+type UserProfile = MeProfile & {
+    userId: string;
+    isFollowing: boolean;
+};
+
+type UserProfileState =
+    | { status: "loading" }
+    | { status: "ready"; profile: UserProfile }
+    | { status: "not-found" }
     | { status: "error" };
 
 const styles = "/* Liquid Glass Utility Classes */\r\n        .glass-panel {\r\n            background: rgba(255, 255, 255, 0.4);\r\n            backdrop-filter: blur(40px);\r\n            -webkit-backdrop-filter: blur(40px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            border-top: 1px solid rgba(255, 255, 255, 0.8); /* Specular highlight */\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), \r\n                        0 4px 20px rgba(0, 0, 0, 0.05);\r\n        }\r\n        \r\n        .glass-input {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            backdrop-filter: blur(20px);\r\n            border: 1px solid rgba(255, 255, 255, 0.7);\r\n            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-input:focus {\n            outline: none;\n            border-color: var(--color-primary, #1f53c9);\n            box-shadow: 0 0 0 2px rgba(31, 83, 201, 0.2), inset 0 1px 3px rgba(0,0,0,0.02);\n        }\n\n        .search-shell {\n            border-radius: 9999px;\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease-out;\n        }\n\n        .search-shell:hover,\n        .search-shell:focus-within {\n            transform: translateY(-2px);\n            filter: drop-shadow(0 10px 22px rgba(31, 83, 201, 0.14));\n        }\n\n        .search-shell .glass-input {\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75), 0 4px 16px rgba(0, 0, 0, 0.04);\n        }\n\n        .search-shell:hover .glass-input {\n            background: rgba(255, 255, 255, 0.62);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .search-shell:focus-within .glass-input {\n            background: rgba(255, 255, 255, 0.72);\n            border-color: rgba(31, 83, 201, 0.55);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 10px 28px rgba(31, 83, 201, 0.16);\n        }\n\n        .search-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .search-shell:hover::after,\n        .search-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell {\n            position: relative;\n            flex: 1;\n            overflow: hidden;\n            border-radius: 1.25rem;\n            background: rgba(255, 255, 255, 0.34);\n            backdrop-filter: blur(18px);\n            -webkit-backdrop-filter: blur(18px);\n            border: 1px solid rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.72), 0 4px 16px rgba(0, 0, 0, 0.035);\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;\n        }\n\n        .composer-shell:hover,\n        .composer-shell:focus-within {\n            transform: translateY(-2px);\n            background: rgba(255, 255, 255, 0.58);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 10px 28px rgba(31, 83, 201, 0.12);\n        }\n\n        .composer-shell:focus-within {\n            border-color: rgba(31, 83, 201, 0.50);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 12px 30px rgba(31, 83, 201, 0.16);\n        }\n\n        .composer-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .composer-shell:hover::after,\n        .composer-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell input {\n            position: relative;\n            z-index: 20;\n            min-height: 44px;\n            padding: 0.65rem 0.95rem;\n        }\n\n        .composer-shell input:focus {\n            outline: none;\n            box-shadow: none;\n        }\n\n        .top-channel {\n            position: relative;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            overflow: hidden;\n            min-height: 34px;\n            padding: 0 12px;\n            border-radius: 9999px;\n            color: var(--color-on-surface-variant, #434654);\n            font-weight: 600;\n            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease-out, background 0.25s ease-out, box-shadow 0.25s ease-out;\n        }\n\n        .top-channel::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n        }\n\n        .top-channel:hover {\n            transform: translateY(-2px);\n            color: var(--color-primary, #1f53c9);\n            background: rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel.active {\n            color: var(--color-primary, #1f53c9);\n            background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(236, 244, 255, 0.62));\n            backdrop-filter: blur(20px) saturate(1.25);\n            -webkit-backdrop-filter: blur(20px) saturate(1.25);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(31, 83, 201, 0.12), 0 10px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel:hover::after,\n        .top-channel.active::after {\n            left: 160%;\n        }\n\n        .top-channel:active {\n            transform: translateY(-1px) scale(0.97);\n        }\n\n        .top-icon-btn {\n            width: 40px;\n            height: 40px;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            transform: translateY(2px);\n            background: rgba(255, 255, 255, 0.16);\n            border: 1px solid rgba(255, 255, 255, 0.22);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.45);\n        }\n\n        .top-icon-btn:hover {\n            transform: translateY(0);\n            background: rgba(255, 255, 255, 0.42);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.70), 0 8px 18px rgba(31, 83, 201, 0.10);\n        }\n\n        .glass-button-primary {\n            background: linear-gradient(135deg, rgba(64, 109, 228, 0.9) 0%, rgba(31, 83, 201, 0.9) 100%);\r\n            backdrop-filter: blur(10px);\r\n            box-shadow: 0 4px 15px rgba(31, 83, 201, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);\r\n            border: 1px solid rgba(255, 255, 255, 0.2);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-button-primary:hover {\r\n            transform: translateY(-1px);\r\n            box-shadow: 0 6px 20px rgba(31, 83, 201, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);\r\n        }\r\n\r\n        .glass-button-ghost {\r\n            background: rgba(255, 255, 255, 0.3);\r\n            backdrop-filter: blur(10px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n\r\n        .glass-button-ghost:hover {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            border-color: rgba(255, 255, 255, 0.8);\r\n        }\r\n\r\n        /* Hover Lift and Shine Effects */\r\n        .hover-lift {\r\n            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\r\n        }\r\n        .hover-lift:hover {\r\n            transform: translateY(-4px);\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 12px 30px rgba(0, 0, 0, 0.08);\r\n            border-color: rgba(255, 255, 255, 0.9);\r\n        }\r\n\r\n        .shine-effect {\r\n            position: relative;\r\n            overflow: hidden;\r\n        }\r\n        .shine-effect::after {\r\n            content: '';\r\n            position: absolute;\r\n            top: 0;\r\n            left: -150%;\r\n            width: 50%;\r\n            height: 100%;\r\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);\r\n            transform: skewX(-25deg);\r\n            transition: left 0.7s ease;\r\n            z-index: 10;\r\n            pointer-events: none;\r\n        }\r\n        .shine-effect:hover::after {\r\n            left: 200%;\r\n        }\r\n\r\n        /* Ambient Background */\r\n        body {\n            background-color: #eef2f6;\n            background-image: \n                radial-gradient(circle at 15% 50%, rgba(180, 197, 255, 0.4) 0%, transparent 50%),\n                radial-gradient(circle at 85% 30%, rgba(219, 226, 250, 0.5) 0%, transparent 50%);\n            background-attachment: fixed;\n            min-height: 100vh;\n        }\n\n        .feed-transition {\n            opacity: 0;\n            transform: translateY(8px) scale(0.995);\n            filter: blur(8px);\n            transition:\n                opacity 0.28s ease,\n                transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),\n                filter 0.34s ease;\n        }\n\n        .feed-transition.feed-ready {\n            opacity: 1;\n            transform: none;\n            filter: none;\n        }\n\n        .feed-transition.feed-leaving {\n            opacity: 0;\n            transform: translateY(6px) scale(0.996);\n            filter: blur(7px);\n            pointer-events: none;\n        }\n\n        @media (prefers-reduced-motion: reduce) {\n            .feed-transition,\n            .feed-transition.feed-ready,\n            .feed-transition.feed-leaving {\n                opacity: 1;\n                transform: none;\n                filter: none;\n                transition: none;\n            }\n        }\n\n        .chart-glow-line {\n            filter: drop-shadow(0 4px 6px rgba(31, 83, 201, 0.2));\n        }\n\r\n        .nav-link-hover {\r\n            transition: all 0.2s ease-out;\r\n        }\r\n        .nav-link-hover:hover {\n            background: rgba(255, 255, 255, 0.4);\n            border-radius: 0.75rem;\n        }\n\n        .profile-tab {\n            position: relative;\n            border: 1px solid transparent;\n            background: transparent;\n            color: rgba(67, 70, 84, 0.92);\n            font-weight: 700;\n            transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;\n        }\n\n        .profile-tab::after {\n            content: \"\";\n            position: absolute;\n            left: 1rem;\n            right: 1rem;\n            bottom: 0;\n            height: 2px;\n            border-radius: 999px;\n            background: transparent;\n            transition: all 0.28s ease;\n        }\n\n        .profile-tab.active,\n        .profile-tab:hover {\n            color: var(--color-primary, #1f53c9);\n            background: rgba(255, 255, 255, 0.54);\n            border: 1px solid rgba(255, 255, 255, 0.38);\n            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28);\n            transform: none;\n        }\n\n        .profile-tab.active::after,\n        .profile-tab:hover::after {\n            background: transparent;\n        }\n\n        .profile-stat-line {\n            color: rgba(67, 70, 84, 0.92);\n        }\n\n        .profile-stat-line strong {\n            color: #191c1e;\n            font-family: \"Hanken Grotesk\", sans-serif;\n            font-size: 17px;\n            font-weight: 700;\n        }";
@@ -1838,38 +1853,12 @@ const variants: Record<string, PageVariant> = {
 export function ProfilePage() {
     const profileKey = parseProfileKey(window.location.pathname, window.location.search);
     const fallbackVariant = variants["me"];
-    const variant = variants[profileKey];
 
     if (profileKey === "me") {
         return createElement(MeProfilePage, { variant: fallbackVariant });
     }
 
-    if (!variant) {
-        return createElement(
-            PageShell,
-            { title: "zfeed - 用户不存在", htmlClass: fallbackVariant.htmlClass, bodyClass: fallbackVariant.bodyClass, styles },
-            createElement("div", { className: "page-root" },
-                createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
-                    createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-3xl rounded-[28px] p-6 md:p-8" },
-                        createElement("a", { className: "text-label-sm text-primary", href: "/home" }, "返回首页"),
-                        createElement(PageState, {
-                            state: "error",
-                            title: "用户不存在",
-                            description: "这个用户不存在或已不可访问。",
-                            actionHref: "/home",
-                            actionLabel: "返回首页"
-                        })
-                    )
-                )
-            )
-        );
-    }
-
-    return createElement(
-        PageShell,
-        { title: variant.title, htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
-        variant.children
-    );
+    return createElement(UserProfilePage, { routeUserId: profileKey, variant: fallbackVariant });
 }
 
 function MeProfilePage({ variant }: { variant: PageVariant }) {
@@ -1906,6 +1895,137 @@ function MeProfilePage({ variant }: { variant: PageVariant }) {
     }
 
     return renderMeReadyPage(state.profile, variant);
+}
+
+function UserProfilePage({ routeUserId, variant }: { routeUserId: string; variant: PageVariant }) {
+    const [state, setState] = useState<UserProfileState>({ status: "loading" });
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        getUserProfile<UserProfileResponse>(routeUserId)
+            .then((response) => {
+                if (isCurrent) {
+                    setState({ status: "ready", profile: normalizeUserProfile(response, routeUserId) });
+                }
+            })
+            .catch((error: unknown) => {
+                if (!isCurrent) {
+                    return;
+                }
+
+                setState(error instanceof ApiError && error.status === 404 ? { status: "not-found" } : { status: "error" });
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [routeUserId]);
+
+    if (state.status !== "ready") {
+        return renderUserStatePage(state, variant);
+    }
+
+    return renderUserReadyPage(state.profile, variant);
+}
+
+function renderUserStatePage(state: Exclude<UserProfileState, { status: "ready" }>, variant: PageVariant) {
+    const title = state.status === "not-found" ? "用户不存在" : "用户主页";
+
+    return createElement(
+        PageShell,
+        { title: `zfeed - ${title}`, htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
+        createElement("div", { className: "page-root" },
+            createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
+                createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-3xl rounded-[28px] p-6 md:p-8" },
+                    createElement("a", { className: "text-label-sm text-primary", href: "/home" }, "返回首页"),
+                    createElement(PageState, getUserStateView(state.status))
+                )
+            )
+        )
+    );
+}
+
+function renderUserReadyPage(profile: UserProfile, variant: PageVariant) {
+    return createElement(
+        PageShell,
+        { title: `zfeed - ${profile.nickname}`, htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
+        createElement("div", { className: "page-root" },
+            renderUserHeader(profile),
+            createElement("div", { className: "pt-24 px-4 md:px-6 max-w-[1600px] mx-auto pb-safe" },
+                createElement("div", { className: "grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-5" },
+                    renderMeLeftRail(),
+                    createElement("main", { className: "feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-4 pb-24 feed-ready" },
+                        createElement("section", { className: "overflow-hidden" },
+                            createElement("div", { className: "px-0 pb-2" },
+                                createElement("div", { className: "relative z-20 flex flex-col md:flex-row md:items-end justify-between gap-5" },
+                                    createElement("div", { className: "flex min-w-0 items-end gap-4" },
+                                        renderMeAvatar(profile, "w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover shrink-0"),
+                                        createElement("div", { className: "min-w-0 pb-1" },
+                                            createElement("h1", { className: "break-words font-display text-[34px] leading-tight text-on-surface" }, profile.nickname),
+                                            createElement("div", { className: "flex flex-wrap items-center gap-3 text-on-surface-variant mt-1" },
+                                                createElement("span", { className: "font-label-sm" }, profile.handle),
+                                                createElement("span", { className: "w-1 h-1 rounded-full bg-outline-variant" }),
+                                                createElement("span", { className: "font-label-sm" }, "创作者主页")
+                                            )
+                                        )
+                                    ),
+                                    createElement("div", { className: "flex flex-wrap gap-2 md:mb-2 self-start md:self-auto" },
+                                        createElement("button", {
+                                            className: "glass-button-primary text-white font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300",
+                                            "data-user-id": profile.userId,
+                                            type: "button"
+                                        }, profile.isFollowing ? "已关注" : "关注")
+                                    )
+                                ),
+                                createElement("p", { className: "break-words font-body-md text-on-surface-variant mt-2" }, profile.bio),
+                                renderMeStats(profile)
+                            )
+                        ),
+                        createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+                            createElement("div", { className: "flex items-center justify-between gap-4" },
+                                createElement("div", null,
+                                    createElement("h2", { className: "font-headline-md text-on-surface" }, "发布内容"),
+                                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "这里会展示创作者公开发布的内容。")
+                                ),
+                                createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/search" }, "继续探索")
+                            )
+                        )
+                    ),
+                    renderMeRightRail(profile)
+                )
+            )
+        )
+    );
+}
+
+function renderUserHeader(profile: UserProfile) {
+    return createElement("header", { className: "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
+        createElement("div", { className: "flex items-center gap-4" },
+            createElement("a", { className: "flex items-center gap-3 hover:opacity-80 transition-opacity duration-300", href: "/home" },
+                createElement("div", { className: "w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center shadow-md" },
+                    createElement("div", { className: "w-3 h-3 bg-white rounded-full" })
+                ),
+                createElement("span", { className: "font-display text-[24px] tracking-tight font-bold text-primary dark:text-primary-fixed" }, "zfeed")
+            ),
+            createElement("div", { className: "hidden md:flex ml-8 relative w-96 group md:ml-16 search-shell overflow-hidden" },
+                createElement("span", { className: "material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] group-focus-within:text-primary transition-colors duration-300" }, "search"),
+                createElement("input", { className: "glass-input w-full pl-10 pr-4 rounded-full font-body-md text-on-surface placeholder:text-on-surface-variant/70 border-white/40 bg-white/30 backdrop-blur-md focus:bg-white/60 transition-colors py-2.5", placeholder: "搜索内容、创作者或话题", type: "text" })
+            )
+        ),
+        createElement("nav", { className: "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
+            createElement("a", { className: "top-channel text-label-sm tracking-wide", href: "/home" }, "推荐"),
+            createElement("a", { className: "top-channel text-label-sm tracking-wide", href: "/following" }, "关注"),
+            createElement("a", { className: "top-channel text-label-sm tracking-wide", href: "/search" }, "搜索")
+        ),
+        createElement("div", { className: "flex items-center gap-5 pr-2 md:pr-12" },
+            createElement("button", { className: "hidden sm:flex glass-button-primary text-white font-label-sm py-2 rounded-full items-center gap-2 active:scale-95 px-6", type: "button" },
+                createElement("span", { className: "material-symbols-outlined text-[18px]" }, "add"),
+                "发布"
+            ),
+            renderMeAvatar(profile, "w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover")
+        )
+    );
 }
 
 function renderMeStatePage(state: Exclude<MeProfileState, { status: "ready" }>, variant: PageVariant) {
@@ -2108,6 +2228,32 @@ function getMeStateView(status: Exclude<MeProfileState["status"], "ready">) {
     };
 }
 
+function getUserStateView(status: Exclude<UserProfileState["status"], "ready">) {
+    if (status === "loading") {
+        return {
+            state: "loading" as const,
+            title: "正在加载用户主页",
+            description: "正在获取创作者资料和统计。"
+        };
+    }
+
+    if (status === "not-found") {
+        return {
+            state: "error" as const,
+            title: "用户不存在",
+            description: "这个用户不存在或已不可访问。",
+            actionHref: "/home",
+            actionLabel: "返回首页"
+        };
+    }
+
+    return {
+        state: "error" as const,
+        title: "用户主页加载失败",
+        description: "请稍后重试。"
+    };
+}
+
 function normalizeMeProfile(response: MeProfileResponse): MeProfile {
     const user = response.user_info ?? {};
     const nickname = cleanProfileText(user.nickname) || "zfeed 用户";
@@ -2121,6 +2267,16 @@ function normalizeMeProfile(response: MeProfileResponse): MeProfile {
         followerCount: normalizeProfileCount(response.follower_count),
         likeReceivedCount: normalizeProfileCount(response.like_received_count),
         favoriteReceivedCount: normalizeProfileCount(response.favorite_received_count)
+    };
+}
+
+function normalizeUserProfile(response: UserProfileResponse, routeUserId: string): UserProfile {
+    const user = response.user_info ?? {};
+    const profile = normalizeMeProfile(response);
+    return {
+        ...profile,
+        userId: cleanProfileText(user.user_id) || routeUserId,
+        isFollowing: response.is_following === true
     };
 }
 

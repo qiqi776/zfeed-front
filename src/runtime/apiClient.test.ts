@@ -10,6 +10,7 @@ import {
     getContentDetail,
     getFollowFeed,
     getRecommendFeed,
+    getUserProfile,
     likeContent,
     searchContents,
     searchUsers,
@@ -152,6 +153,7 @@ describe("apiClient", () => {
         await getRecommendFeed({ cursor: "", page_size: 20, snapshot_id: "snap-1" });
         await getFollowFeed({ cursor: "", page_size: 20 });
         await getContentDetail({ content_id: "1001" });
+        await getUserProfile("1001");
 
         expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/feed/recommend", expect.objectContaining({
             method: "POST",
@@ -173,6 +175,12 @@ describe("apiClient", () => {
                 Authorization: "Bearer reader-token"
             }),
             body: JSON.stringify({ content_id: "1001" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(4, "/v1/user/profile/1001", expect.objectContaining({
+            method: "GET",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            })
         }));
     });
 

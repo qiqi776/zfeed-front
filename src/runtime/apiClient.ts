@@ -78,6 +78,8 @@ type ContentDetailBody = {
     content_id: string;
 };
 
+type UserProfileId = string | number;
+
 export class ApiError extends Error {
     constructor(
         public readonly status: number,
@@ -208,6 +210,10 @@ export function getFollowFeed<T>(body: FollowFeedBody) {
 
 export function getContentDetail<T>(body: ContentDetailBody) {
     return apiRequest<T>("/v1/content/detail", { method: "POST", body, optionalAuth: true });
+}
+
+export function getUserProfile<T>(userId: UserProfileId) {
+    return apiRequest<T>(`/v1/user/profile/${encodeURIComponent(String(userId))}`, { optionalAuth: true });
 }
 
 export function searchContents<T>(body: SearchRequestBody) {
