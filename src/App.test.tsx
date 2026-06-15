@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
@@ -416,6 +416,75 @@ describe("App routes", () => {
         })));
     });
 
+    it("posts a reply from an inline reply composer with Bearer auth", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "reply-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ comment_id: "5002" }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        const replyButtons = await screen.findAllByRole("button", { name: "回复" });
+        fireEvent.click(replyButtons[0]);
+
+        const replyInput = await screen.findByPlaceholderText("回复 Chen Zhiyuan...");
+        fireEvent.change(replyInput, { target: { value: "补充一下这条回复" } });
+        const replyComposer = replyInput.closest("[data-reply-composer]");
+        expect(replyComposer).not.toBeNull();
+        fireEvent.click(within(replyComposer as HTMLElement).getByRole("button", { name: "发送" }));
+
+        expect(await screen.findByText("补充一下这条回复")).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reply-token"
+            }),
+            body: JSON.stringify({
+                content_id: "1001",
+                scene: "content",
+                comment: "补充一下这条回复",
+                parent_id: "3001",
+                root_id: "3001",
+                reply_to_user_id: "2001",
+                content_user_id: "1001"
+            })
+        })));
+    });
+
+    it("deletes my own comment optimistically with Bearer auth", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "delete-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({}));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        expect(await screen.findByText("评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。")).toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", { name: "删除评论" }));
+
+        await waitFor(() => expect(screen.queryByText("评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。")).not.toBeInTheDocument());
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
+            method: "DELETE",
+            headers: expect.objectContaining({
+                Authorization: "Bearer delete-token"
+            }),
+            body: JSON.stringify({
+                comment_id: "3003",
+                content_id: "1001",
+                scene: "content",
+                root_id: "3003"
+            })
+        })));
+    });
+
     it("saves edited profile fields with validation and Bearer auth", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "profile-token",
@@ -489,6 +558,19 @@ describe("App routes", () => {
             })
         })));
         await waitFor(() => expect(window.location.pathname).toBe("/content/6789"));
+    });
+
+    it("submits the search page input back into the product search route", async () => {
+        window.history.pushState({}, "", "/search");
+
+        render(<App />);
+
+        const searchInput = await screen.findByPlaceholderText("搜索内容、创作者或话题");
+        fireEvent.change(searchInput, { target: { value: "设计 系统" } });
+        fireEvent.keyDown(searchInput, { key: "Enter" });
+
+        await waitFor(() => expect(window.location.pathname).toBe("/search"));
+        expect(window.location.search).toBe("?q=%E8%AE%BE%E8%AE%A1+%E7%B3%BB%E7%BB%9F");
     });
 
     it("opens internal links inside the React app without a full page navigation", async () => {

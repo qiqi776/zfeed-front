@@ -378,7 +378,7 @@ const variants: Record<string, PageVariant> = {
                                                         "86"
                                                     )
                                                 ),
-                                                createElement("button", { "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
+                                                createElement("button", { "aria-label": "回复", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
                                                     createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                                         "reply"
                                                     ),
@@ -421,7 +421,7 @@ const variants: Record<string, PageVariant> = {
                                                         "54"
                                                     )
                                                 ),
-                                                createElement("button", { "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
+                                                createElement("button", { "aria-label": "回复", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
                                                     createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                                         "reply"
                                                     ),
@@ -464,12 +464,20 @@ const variants: Record<string, PageVariant> = {
                                                         "37"
                                                     )
                                                 ),
-                                                createElement("button", { "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
+                                                createElement("button", { "aria-label": "回复", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
                                                     createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                                         "reply"
                                                     ),
                                                     createElement("span", { "className": "font-label-sm" },
                                                         "回复"
+                                                    )
+                                                ),
+                                                createElement("button", { "aria-label": "删除评论", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-error active:scale-95 transition-all duration-300" },
+                                                    createElement("span", { "className": "material-symbols-outlined text-[18px]" },
+                                                        "delete"
+                                                    ),
+                                                    createElement("span", { "className": "font-label-sm" },
+                                                        "删除"
                                                     )
                                                 )
                                             )
@@ -1023,7 +1031,7 @@ const variants: Record<string, PageVariant> = {
                                                         "86"
                                                     )
                                                 ),
-                                                createElement("button", { "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
+                                                createElement("button", { "aria-label": "回复", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
                                                     createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                                         "reply"
                                                     ),
@@ -1066,7 +1074,7 @@ const variants: Record<string, PageVariant> = {
                                                         "54"
                                                     )
                                                 ),
-                                                createElement("button", { "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
+                                                createElement("button", { "aria-label": "回复", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
                                                     createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                                         "reply"
                                                     ),
@@ -1109,12 +1117,20 @@ const variants: Record<string, PageVariant> = {
                                                         "37"
                                                     )
                                                 ),
-                                                createElement("button", { "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
+                                                createElement("button", { "aria-label": "回复", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-300" },
                                                     createElement("span", { "className": "material-symbols-outlined text-[18px]" },
                                                         "reply"
                                                     ),
                                                     createElement("span", { "className": "font-label-sm" },
                                                         "回复"
+                                                    )
+                                                ),
+                                                createElement("button", { "aria-label": "删除评论", "className": "flex items-center gap-1.5 text-on-surface-variant hover:text-error active:scale-95 transition-all duration-300" },
+                                                    createElement("span", { "className": "material-symbols-outlined text-[18px]" },
+                                                        "delete"
+                                                    ),
+                                                    createElement("span", { "className": "font-label-sm" },
+                                                        "删除"
                                                     )
                                                 )
                                             )

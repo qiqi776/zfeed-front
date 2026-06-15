@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import {
     commentContent,
+    deleteComment,
     favoriteContent,
     followUser,
     likeContent,
@@ -55,6 +56,9 @@ export function PageShell({ title, htmlClass, bodyClass, styles, children }: Pag
             handleSelectableClick(event);
             handleComposeClick(event);
             handleFollowClick(event);
+            handleReplyClick(event);
+            handleReplySubmitClick(event);
+            handleDeleteCommentClick(event);
             handleCommentSubmitClick(event);
             handleProfileSaveClick(event);
             handlePublishClick(event);
@@ -270,6 +274,162 @@ function handleCommentSubmitClick(event: MouseEvent) {
     });
 }
 
+function handleReplyClick(event: MouseEvent) {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest<HTMLButtonElement>("button");
+    if (!button || button.closest("[data-reply-composer]")) {
+        return;
+    }
+
+    const isReplyButton = button.getAttribute("aria-label") === "回复" || Array.from(button.querySelectorAll(".material-symbols-outlined"))
+        .some((icon) => icon.textContent?.trim() === "reply");
+    if (!isReplyButton) {
+        return;
+    }
+
+    const row = button.closest<HTMLElement>(".comment-row");
+    const metadata = row ? resolveCommentMetadata(row) : null;
+    if (!row || !metadata) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (!readAuthSession()) {
+        navigateToLogin();
+        return;
+    }
+
+    row.querySelector("[data-reply-composer]")?.remove();
+    row.append(createReplyComposer(metadata.authorName));
+}
+
+function handleReplySubmitClick(event: MouseEvent) {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest<HTMLButtonElement>("button");
+    const composer = button?.closest<HTMLElement>("[data-reply-composer]");
+    if (!button || !composer || button.textContent?.trim() !== "发送") {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (button.dataset.pending === "true") {
+        return;
+    }
+
+    const row = composer.closest<HTMLElement>(".comment-row");
+    const metadata = row ? resolveCommentMetadata(row) : null;
+    const input = composer.querySelector<HTMLInputElement>("input");
+    const comment = input?.value.trim() ?? "";
+    if (!row || !metadata || !input) {
+        return;
+    }
+
+    if (!comment) {
+        showInlineStatus(button, "请输入回复内容", "error");
+        return;
+    }
+
+    if (comment.length > 255) {
+        showInlineStatus(button, "回复最多 255 字", "error");
+        return;
+    }
+
+    if (!readAuthSession()) {
+        navigateToLogin();
+        return;
+    }
+
+    const contentId = resolveNumericContentIdFromPath();
+    const contentUserId = resolveContentUserIdFromPath();
+    if (!contentId || !contentUserId) {
+        showInlineStatus(button, "回复失败，请重试", "error");
+        return;
+    }
+
+    button.dataset.pending = "true";
+    const previousText = button.textContent ?? "发送";
+    button.textContent = "发送中";
+    const pendingReply = insertPendingReply(composer, comment);
+
+    commentContent({
+        content_id: contentId,
+        scene: "content",
+        comment,
+        parent_id: metadata.commentId,
+        root_id: metadata.rootId,
+        reply_to_user_id: metadata.userId,
+        content_user_id: contentUserId
+    }).then(() => {
+        input.value = "";
+        pendingReply?.setAttribute("data-comment-state", "sent");
+        showInlineStatus(button, "回复已发送", "success");
+    }).catch((error: unknown) => {
+        pendingReply?.remove();
+        showInlineStatus(button, "回复失败，请重试", "error");
+        if (isAuthError(error)) {
+            navigateToLogin();
+        }
+    }).finally(() => {
+        button.textContent = previousText;
+        delete button.dataset.pending;
+    });
+}
+
+function handleDeleteCommentClick(event: MouseEvent) {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest<HTMLButtonElement>('button[aria-label="删除评论"]');
+    if (!button) {
+        return;
+    }
+
+    const row = button.closest<HTMLElement>(".comment-row");
+    const metadata = row ? resolveCommentMetadata(row) : null;
+    if (!row || !metadata) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (button.dataset.pending === "true") {
+        return;
+    }
+
+    if (!readAuthSession()) {
+        navigateToLogin();
+        return;
+    }
+
+    const contentId = resolveNumericContentIdFromPath();
+    if (!contentId) {
+        showInlineStatus(button, "删除失败，请重试", "error");
+        return;
+    }
+
+    button.dataset.pending = "true";
+    const parent = row.parentElement;
+    const nextSibling = row.nextSibling;
+    row.remove();
+
+    deleteComment({
+        comment_id: metadata.commentId,
+        content_id: contentId,
+        scene: "content",
+        root_id: metadata.rootId
+    }).catch((error: unknown) => {
+        if (parent) {
+            parent.insertBefore(row, nextSibling);
+        }
+        showInlineStatus(button, "删除失败，请重试", "error");
+        if (isAuthError(error)) {
+            navigateToLogin();
+        }
+    }).finally(() => {
+        delete button.dataset.pending;
+    });
+}
+
 function handleProfileSaveClick(event: MouseEvent) {
     const target = event.target instanceof Element ? event.target : null;
     const button = target?.closest<HTMLButtonElement>("button");
@@ -399,7 +559,7 @@ function handleSearchSubmit(event: KeyboardEvent) {
         return;
     }
 
-    if (!event.target.closest(".search-shell, .search-box, .composer-shell")) {
+    if (event.target.type !== "search" && !event.target.closest(".search-shell, .search-box, .composer-shell")) {
         return;
     }
 
@@ -530,6 +690,62 @@ function insertPendingComment(button: HTMLElement, comment: string) {
     item.append(row);
     comments.prepend(item);
     return item;
+}
+
+function createReplyComposer(authorName: string) {
+    const composer = document.createElement("div");
+    composer.dataset.replyComposer = "true";
+    composer.className = "mt-4 rounded-2xl bg-white/35 border border-white/40 px-4 py-3";
+
+    const shell = document.createElement("div");
+    shell.className = "composer-shell";
+
+    const input = document.createElement("input");
+    input.className = "w-full bg-transparent border-none text-body-md focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300";
+    input.placeholder = `回复 ${authorName}...`;
+    input.type = "text";
+    input.maxLength = 255;
+
+    const actions = document.createElement("div");
+    actions.className = "flex items-center justify-end gap-2 mt-3";
+
+    const cancel = document.createElement("button");
+    cancel.className = "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95";
+    cancel.type = "button";
+    cancel.textContent = "取消";
+    cancel.addEventListener("click", () => composer.remove());
+
+    const send = document.createElement("button");
+    send.className = "glass-button-primary text-white font-label-sm px-4 py-2 rounded-full active:scale-95 transition-all duration-300";
+    send.type = "button";
+    send.textContent = "发送";
+
+    shell.append(input);
+    actions.append(cancel, send);
+    composer.append(shell, actions);
+    return composer;
+}
+
+function insertPendingReply(composer: HTMLElement, comment: string) {
+    const item = document.createElement("div");
+    item.dataset.commentState = "pending";
+    item.className = "mt-3 rounded-2xl bg-white/35 border border-white/40 px-4 py-3 font-body-md text-on-surface-variant text-[13px]";
+    item.textContent = comment;
+    composer.append(item);
+    return item;
+}
+
+function resolveCommentMetadata(row: HTMLElement) {
+    const authorName = Array.from(row.querySelectorAll<HTMLElement>(".font-headline-md"))
+        .map((item) => item.textContent?.trim() ?? "")
+        .find(Boolean) ?? "";
+    const map: Record<string, { authorName: string; commentId: string; rootId: string; userId: string }> = {
+        "Chen Zhiyuan": { authorName: "Chen Zhiyuan", commentId: "3001", rootId: "3001", userId: "2001" },
+        "Zhang Xiaolong": { authorName: "Zhang Xiaolong", commentId: "3002", rootId: "3002", userId: "2002" },
+        "Mira Chen": { authorName: "Mira Chen", commentId: "3003", rootId: "3003", userId: "7" }
+    };
+
+    return map[authorName] ?? null;
 }
 
 function showInlineStatus(anchor: HTMLElement, message: string, type: "success" | "error") {
