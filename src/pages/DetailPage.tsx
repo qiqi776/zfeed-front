@@ -1,6 +1,8 @@
-import { createElement } from "react";
+import { createElement, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { getContentDetail } from "../runtime/apiClient";
 import { PageShell } from "../runtime/PageShell";
+import { PageState } from "./PageState";
 
 type PageVariant = {
     title: string;
@@ -8,6 +10,39 @@ type PageVariant = {
     bodyClass: string;
     children: ReactNode;
 };
+
+type ApiContentDetail = {
+    content_id: string | number;
+    content_type: number;
+    author_id: string | number;
+    author_name: string;
+    author_avatar?: string;
+    title: string;
+    description?: string;
+    cover_url?: string;
+    article_content?: string;
+    video_url?: string;
+    video_duration?: number;
+    published_at?: number;
+    like_count?: number;
+    favorite_count?: number;
+    comment_count?: number;
+    is_liked?: boolean;
+    is_favorited?: boolean;
+    is_following_author?: boolean;
+};
+
+type ContentDetailResponse = {
+    detail?: ApiContentDetail;
+};
+
+type DynamicDetailState =
+    | { status: "loading" }
+    | { status: "error" }
+    | { status: "not-found" }
+    | { status: "ready"; detail: ApiContentDetail };
+
+const detailBodyClass = "text-on-surface font-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container";
 
 const styles = "/* Liquid Glass Utility Classes */\r\n        .glass-panel {\r\n            background: rgba(255, 255, 255, 0.4);\r\n            backdrop-filter: blur(40px);\r\n            -webkit-backdrop-filter: blur(40px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            border-top: 1px solid rgba(255, 255, 255, 0.8); /* Specular highlight */\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), \r\n                        0 4px 20px rgba(0, 0, 0, 0.05);\r\n        }\r\n        \r\n        .glass-input {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            backdrop-filter: blur(20px);\r\n            border: 1px solid rgba(255, 255, 255, 0.7);\r\n            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-input:focus {\n            outline: none;\n            border-color: var(--color-primary, #1f53c9);\n            box-shadow: 0 0 0 2px rgba(31, 83, 201, 0.2), inset 0 1px 3px rgba(0,0,0,0.02);\n        }\n\n        .search-shell {\n            border-radius: 9999px;\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease-out;\n        }\n\n        .search-shell:hover,\n        .search-shell:focus-within {\n            transform: translateY(-2px);\n            filter: drop-shadow(0 10px 22px rgba(31, 83, 201, 0.14));\n        }\n\n        .search-shell .glass-input {\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75), 0 4px 16px rgba(0, 0, 0, 0.04);\n        }\n\n        .search-shell:hover .glass-input {\n            background: rgba(255, 255, 255, 0.62);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .search-shell:focus-within .glass-input {\n            background: rgba(255, 255, 255, 0.72);\n            border-color: rgba(31, 83, 201, 0.55);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 10px 28px rgba(31, 83, 201, 0.16);\n        }\n\n        .search-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .search-shell:hover::after,\n        .search-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell {\n            position: relative;\n            flex: 1;\n            overflow: hidden;\n            border-radius: 1.25rem;\n            background: rgba(255, 255, 255, 0.34);\n            backdrop-filter: blur(18px);\n            -webkit-backdrop-filter: blur(18px);\n            border: 1px solid rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.72), 0 4px 16px rgba(0, 0, 0, 0.035);\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;\n        }\n\n        .composer-shell:hover,\n        .composer-shell:focus-within {\n            transform: translateY(-2px);\n            background: rgba(255, 255, 255, 0.58);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 10px 28px rgba(31, 83, 201, 0.12);\n        }\n\n        .composer-shell:focus-within {\n            border-color: rgba(31, 83, 201, 0.50);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 12px 30px rgba(31, 83, 201, 0.16);\n        }\n\n        .composer-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .composer-shell:hover::after,\n        .composer-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell input {\n            position: relative;\n            z-index: 20;\n            min-height: 44px;\n            padding: 0.65rem 0.95rem;\n        }\n\n        .composer-shell input:focus {\n            outline: none;\n            box-shadow: none;\n        }\n\n        .top-channel {\n            position: relative;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            overflow: hidden;\n            min-height: 34px;\n            padding: 0 12px;\n            border-radius: 9999px;\n            color: var(--color-on-surface-variant, #434654);\n            font-weight: 600;\n            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease-out, background 0.25s ease-out, box-shadow 0.25s ease-out;\n        }\n\n        .top-channel::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n        }\n\n        .top-channel:hover {\n            transform: translateY(-2px);\n            color: var(--color-primary, #1f53c9);\n            background: rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel.active {\n            color: var(--color-primary, #1f53c9);\n            background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(236, 244, 255, 0.62));\n            backdrop-filter: blur(20px) saturate(1.25);\n            -webkit-backdrop-filter: blur(20px) saturate(1.25);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(31, 83, 201, 0.12), 0 10px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel:hover::after,\n        .top-channel.active::after {\n            left: 160%;\n        }\n\n        .top-channel:active {\n            transform: translateY(-1px) scale(0.97);\n        }\n\n        .top-icon-btn {\n            width: 40px;\n            height: 40px;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            transform: translateY(2px);\n            background: rgba(255, 255, 255, 0.16);\n            border: 1px solid rgba(255, 255, 255, 0.22);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.45);\n        }\n\n        .top-icon-btn:hover {\n            transform: translateY(0);\n            background: rgba(255, 255, 255, 0.42);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.70), 0 8px 18px rgba(31, 83, 201, 0.10);\n        }\n\n        .glass-button-primary {\n            background: linear-gradient(135deg, rgba(64, 109, 228, 0.9) 0%, rgba(31, 83, 201, 0.9) 100%);\r\n            backdrop-filter: blur(10px);\r\n            box-shadow: 0 4px 15px rgba(31, 83, 201, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);\r\n            border: 1px solid rgba(255, 255, 255, 0.2);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-button-primary:hover {\r\n            transform: translateY(-1px);\r\n            box-shadow: 0 6px 20px rgba(31, 83, 201, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);\r\n        }\r\n\r\n        .glass-button-ghost {\r\n            background: rgba(255, 255, 255, 0.3);\r\n            backdrop-filter: blur(10px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n\r\n        .glass-button-ghost:hover {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            border-color: rgba(255, 255, 255, 0.8);\r\n        }\r\n\r\n        /* Hover Lift and Shine Effects */\r\n        .hover-lift {\r\n            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\r\n        }\r\n        .hover-lift:hover {\r\n            transform: translateY(-4px);\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 12px 30px rgba(0, 0, 0, 0.08);\r\n            border-color: rgba(255, 255, 255, 0.9);\r\n        }\r\n\r\n        .shine-effect {\r\n            position: relative;\r\n            overflow: hidden;\r\n        }\r\n        .shine-effect::after {\r\n            content: '';\r\n            position: absolute;\r\n            top: 0;\r\n            left: -150%;\r\n            width: 50%;\r\n            height: 100%;\r\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);\r\n            transform: skewX(-25deg);\r\n            transition: left 0.7s ease;\r\n            z-index: 10;\r\n            pointer-events: none;\r\n        }\r\n        .shine-effect:hover::after {\r\n            left: 200%;\r\n        }\r\n\r\n        /* Ambient Background */\r\n        body {\n            background-color: #eef2f6;\n            background-image: \n                radial-gradient(circle at 15% 50%, rgba(180, 197, 255, 0.4) 0%, transparent 50%),\n                radial-gradient(circle at 85% 30%, rgba(219, 226, 250, 0.5) 0%, transparent 50%);\n            background-attachment: fixed;\n            min-height: 100vh;\n        }\n\n        .feed-transition {\n            opacity: 0;\n            transform: translateY(8px) scale(0.995);\n            filter: blur(8px);\n            transition:\n                opacity 0.28s ease,\n                transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),\n                filter 0.34s ease;\n        }\n\n        .feed-transition.feed-ready {\n            opacity: 1;\n            transform: none;\n            filter: none;\n        }\n\n        .feed-transition.feed-leaving {\n            opacity: 0;\n            transform: translateY(6px) scale(0.996);\n            filter: blur(7px);\n            pointer-events: none;\n        }\n\n        @media (prefers-reduced-motion: reduce) {\n            .feed-transition,\n            .feed-transition.feed-ready,\n            .feed-transition.feed-leaving {\n                opacity: 1;\n                transform: none;\n                filter: none;\n                transition: none;\n            }\n        }\n\n        .chart-glow-line {\n            filter: drop-shadow(0 4px 6px rgba(31, 83, 201, 0.2));\n        }\n\r\n        .nav-link-hover {\r\n            transition: all 0.2s ease-out;\r\n        }\r\n        .nav-link-hover:hover {\n            background: rgba(255, 255, 255, 0.4);\n            border-radius: 0.75rem;\n        }\n\n        .detail-prose p {\n            margin-bottom: 1rem;\n            color: rgba(67, 70, 84, 0.96);\n            font-size: 16px;\n            line-height: 1.82;\n        }\n\n        .detail-prose h2 {\n            margin-top: 1.5rem;\n            margin-bottom: 0.75rem;\n            font-family: \"Hanken Grotesk\", sans-serif;\n            font-size: 22px;\n            line-height: 1.35;\n            font-weight: 700;\n            color: #191c1e;\n        }\n\n        .detail-hero {\n            background:\n                radial-gradient(circle at 20% 22%, rgba(255,255,255,0.72), transparent 28%),\n                radial-gradient(circle at 82% 18%, rgba(180,197,255,0.68), transparent 34%),\n                linear-gradient(135deg, rgba(219,226,250,0.78), rgba(237,250,255,0.76) 48%, rgba(231,223,246,0.66));\n        }\n\n        .detail-video-shell {\n            background:\n                radial-gradient(circle at 24% 18%, rgba(255,255,255,0.42), transparent 30%),\n                linear-gradient(135deg, rgba(31,83,201,0.82), rgba(88,96,128,0.78));\n            box-shadow: inset 0 1px 2px rgba(255,255,255,0.46), 0 20px 48px rgba(31,83,201,0.22);\n        }\n\n        .comment-row {\n            background: rgba(255,255,255,0.28);\n            border: 1px solid rgba(255,255,255,0.42);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.62);\n        }\n\n        .article-anchor {\n            text-decoration: none;\n            color: inherit;\n        }";
 
@@ -1307,6 +1342,11 @@ const variants: Record<string, PageVariant> = {
 };
 
 export function DetailPage() {
+    const contentId = getNumericContentId(window.location.pathname);
+    if (contentId) {
+        return createElement(DynamicContentDetailPage, { contentId, key: contentId });
+    }
+
     const detailKey = resolveDetailKey(window.location.pathname, window.location.search);
     const variant = variants[detailKey] ?? variants["article"];
 
@@ -1326,4 +1366,190 @@ function resolveDetailKey(pathname: string, search: string) {
     }
 
     return new URLSearchParams(search).get("type") === "video" ? "video" : "article";
+}
+
+function DynamicContentDetailPage({ contentId }: { contentId: string }) {
+    const [state, setState] = useState<DynamicDetailState>({ status: "loading" });
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        getContentDetail<ContentDetailResponse>({ content_id: contentId })
+            .then((response) => {
+                if (!isCurrent) {
+                    return;
+                }
+
+                if (!response.detail) {
+                    setState({ status: "not-found" });
+                    return;
+                }
+
+                setState({ status: "ready", detail: response.detail });
+            })
+            .catch(() => {
+                if (isCurrent) {
+                    setState({ status: "error" });
+                }
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [contentId]);
+
+    const title = state.status === "ready" ? `zfeed - ${state.detail.title}` : "zfeed - 内容详情";
+
+    return createElement(
+        PageShell,
+        { title, htmlClass: "light", bodyClass: detailBodyClass, styles },
+        createElement("div", { className: "page-root" },
+            createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
+                createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-4xl rounded-3xl p-5 md:p-8" },
+                    createElement("a", { className: "font-label-sm text-primary", href: "/home" }, "返回首页"),
+                    renderDynamicDetailState(state)
+                )
+            )
+        )
+    );
+}
+
+function renderDynamicDetailState(state: DynamicDetailState) {
+    if (state.status === "loading") {
+        return createElement(PageState, {
+            state: "loading",
+            title: "正在加载内容",
+            description: "正在获取内容详情。"
+        });
+    }
+
+    if (state.status === "error") {
+        return createElement(PageState, {
+            state: "error",
+            title: "内容加载失败",
+            description: "请稍后重试。"
+        });
+    }
+
+    if (state.status === "not-found") {
+        return createElement(PageState, {
+            state: "empty",
+            title: "内容不存在",
+            description: "这篇内容可能已删除或不可见。"
+        });
+    }
+
+    return renderDynamicDetail(state.detail);
+}
+
+function renderDynamicDetail(detail: ApiContentDetail) {
+    const contentId = String(detail.content_id);
+    const authorId = String(detail.author_id);
+    const paragraphs = getArticleParagraphs(detail);
+    const isVideo = detail.content_type === 2;
+
+    return createElement("article", { className: "mt-6" },
+        detail.cover_url
+            ? createElement("img", {
+                alt: detail.title,
+                className: "mb-6 aspect-[16/9] w-full rounded-3xl border border-white/50 object-cover shadow-sm",
+                src: detail.cover_url
+            })
+            : null,
+        createElement("div", { className: "flex flex-wrap items-center justify-between gap-4" },
+            createElement("div", { className: "flex min-w-0 items-center gap-3" },
+                detail.author_avatar
+                    ? createElement("img", {
+                        alt: detail.author_name,
+                        className: "h-11 w-11 shrink-0 rounded-full border border-white object-cover shadow-sm",
+                        src: detail.author_avatar
+                    })
+                    : createElement("div", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white font-headline-md shadow-sm" },
+                        getAvatarFallback(detail.author_name)
+                    ),
+                createElement("div", { className: "min-w-0" },
+                    createElement("div", { className: "truncate font-headline-md text-[15px] text-on-surface" }, detail.author_name),
+                    createElement("div", { className: "font-meta-xs text-on-surface-variant" }, formatDetailDate(detail.published_at))
+                )
+            ),
+            createElement("button", {
+                className: `glass-button-ghost rounded-full px-4 py-2 font-label-sm active:scale-95 transition-all duration-300 ${detail.is_following_author ? "text-on-surface-variant" : "text-primary"}`,
+                "data-user-id": authorId,
+                type: "button"
+            }, detail.is_following_author ? "已关注" : "关注作者")
+        ),
+        createElement("h1", { className: "mt-6 break-words font-display text-[34px] font-bold leading-tight tracking-normal text-on-surface md:text-[44px]" }, detail.title),
+        detail.description
+            ? createElement("p", { className: "mt-4 break-words text-[16px] leading-8 text-on-surface-variant" }, detail.description)
+            : null,
+        isVideo && detail.video_url
+            ? createElement("a", {
+                className: "detail-video-shell mt-6 flex min-h-[220px] items-center justify-center rounded-3xl text-white shadow-sm",
+                href: detail.video_url
+            },
+                createElement("span", { className: "material-symbols-outlined text-[48px]" }, "play_circle"),
+                createElement("span", { className: "sr-only" }, "播放视频")
+            )
+            : null,
+        paragraphs.length > 0
+            ? createElement("div", { className: "detail-prose mt-6 break-words" },
+                paragraphs.map((paragraph, index) => createElement("p", { key: `${contentId}-${index}` }, paragraph))
+            )
+            : null,
+        createElement("div", { className: "mt-8 flex flex-wrap items-center gap-3" },
+            createElement("button", {
+                className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${detail.is_liked ? "text-error" : "text-on-surface-variant"}`,
+                "data-content-id": contentId,
+                "data-content-user-id": authorId,
+                type: "button"
+            },
+                createElement("span", { className: "material-symbols-outlined text-[18px]" }, "favorite"),
+                createElement("span", null, formatCount(detail.like_count))
+            ),
+            createElement("button", {
+                className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${detail.is_favorited ? "text-primary" : "text-on-surface-variant"}`,
+                "data-content-id": contentId,
+                type: "button"
+            },
+                createElement("span", { className: "material-symbols-outlined text-[18px]" }, "bookmark"),
+                createElement("span", null, detail.is_favorited ? "已保存" : "收藏")
+            ),
+            createElement("div", { className: "glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm text-on-surface-variant" },
+                createElement("span", { className: "material-symbols-outlined text-[18px]" }, "chat_bubble"),
+                createElement("span", null, formatCount(detail.comment_count))
+            )
+        )
+    );
+}
+
+function getNumericContentId(pathname: string) {
+    const match = pathname.match(/^\/content\/(\d+)$/);
+    return match?.[1] ?? "";
+}
+
+function getArticleParagraphs(detail: ApiContentDetail) {
+    return (detail.article_content ?? "")
+        .split(/\r?\n/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean);
+}
+
+function formatDetailDate(publishedAt?: number) {
+    if (!publishedAt) {
+        return "刚刚";
+    }
+
+    return new Intl.DateTimeFormat("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).format(new Date(publishedAt * 1000));
+}
+
+function formatCount(count?: number) {
+    return String(count ?? 0);
+}
+
+function getAvatarFallback(authorName: string) {
+    return authorName.trim().charAt(0).toUpperCase() || "Z";
 }

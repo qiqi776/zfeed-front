@@ -231,6 +231,56 @@ describe("App routes", () => {
         expect(await screen.findByRole("heading", { name: "编辑资料" })).toBeInTheDocument();
     });
 
+    it("loads numeric content detail from the API without executing user content", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({
+            detail: {
+                content_id: "1001",
+                content_type: 1,
+                author_id: "1002",
+                author_name: "Nora <admin>",
+                author_avatar: "https://example.com/nora.png",
+                title: "真实详情 <script>alert(1)</script>",
+                description: "接口返回的正文摘要",
+                cover_url: "https://example.com/cover.png",
+                article_content: "第一段真实正文。\n第二段保持安全文本。",
+                video_url: "",
+                video_duration: 0,
+                published_at: 1765670400,
+                like_count: 12,
+                favorite_count: 5,
+                comment_count: 3,
+                is_liked: false,
+                is_favorited: true,
+                is_following_author: false
+            }
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/1001");
+
+        render(<App />);
+
+        expect(await screen.findByText("真实详情 <script>alert(1)</script>")).toBeInTheDocument();
+        expect(screen.getByText("Nora <admin>")).toBeInTheDocument();
+        expect(screen.getByText("第一段真实正文。")).toBeInTheDocument();
+        expect(screen.getByText("第二段保持安全文本。")).toBeInTheDocument();
+        expect(document.querySelector("script")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/content/detail", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ content_id: "1001" })
+        }));
+    });
+
+    it("shows an error state when numeric content detail cannot be loaded", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, { status: 500 })));
+        window.history.pushState({}, "", "/content/1001");
+
+        render(<App />);
+
+        const errorState = await screen.findByText("内容加载失败");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("用 AI 构建产品：30 天从 0 到 1")).not.toBeInTheDocument();
+    });
+
     it("shows an auth-required state on edit profile when signed out", async () => {
         window.history.pushState({}, "", "/me/edit");
 
