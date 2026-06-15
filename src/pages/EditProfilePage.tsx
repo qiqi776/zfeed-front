@@ -190,7 +190,7 @@ export function EditProfilePage() {
                             )
                         ),
                         createElement("section", { "className": "grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-5" },
-                            createElement("form", { "className": "glass-panel rounded-3xl p-6 flex flex-col gap-5" },
+                            createElement("form", { "className": "glass-panel rounded-3xl p-6 flex flex-col gap-5", "data-profile-edit": "true" },
                                 createElement("div", { "className": "flex items-center gap-4 pb-5 border-b border-white/30" },
                                     createElement("div", { "className": "relative" },
                                         createElement("img", { "alt": "Mira Chen", "className": "w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover", "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuD2WuyVTcm_5B9RRybna_LVQrlLy_WxGL5XlBe5mwsnpiXEMqm659guA4lMJTK4UxMdageAf1TDs-L1AxY0Pyet1sw6Gt9bFKPqlmRAGBGVZTFSa8rcM4dqhY168MAKLXSk-uBA8cNTXdk2tHU0bTidPBlbcnn53QTqxLHVpX3ncbmXw-VqULqMGrHK0jVs2DFCdMPPDvUNhSMraLFPOKFaYOwbxG7AZ9zP3UCZmjG56hYLmnhtsyZt6X2OYb5mSbVj04nidzbV1Y8" }),
@@ -214,7 +214,7 @@ export function EditProfilePage() {
                                         createElement("span", { "className": "edit-label" },
                                             "昵称"
                                         ),
-                                        createElement("input", { "className": "edit-field rounded-2xl px-4 py-3 font-body-md text-on-surface", "defaultValue": "Mira Chen", "type": "text" })
+                                        createElement("input", { "className": "edit-field rounded-2xl px-4 py-3 font-body-md text-on-surface", "defaultValue": "Mira Chen", "name": "nickname", "type": "text" })
                                     ),
                                     createElement("label", { "className": "flex flex-col gap-2" },
                                         createElement("span", { "className": "edit-label" },
@@ -239,7 +239,7 @@ export function EditProfilePage() {
                                     createElement("span", { "className": "edit-label" },
                                         "简介"
                                     ),
-                                    createElement("textarea", { "className": "edit-field rounded-2xl px-4 py-3 font-body-md text-on-surface min-h-28 resize-none", "defaultValue": "关注创作者工具、液态玻璃界面和高质量信息流体验。正在把 zfeed 打磨成一个适合深度阅读和持续创作的社区。" })
+                                    createElement("textarea", { "className": "edit-field rounded-2xl px-4 py-3 font-body-md text-on-surface min-h-28 resize-none", "defaultValue": "关注创作者工具、液态玻璃界面和高质量信息流体验。正在把 zfeed 打磨成一个适合深度阅读和持续创作的社区。", "name": "bio" })
                                 ),
                                 createElement("div", { "className": "grid grid-cols-1 md:grid-cols-2 gap-4" },
                                     createElement("label", { "className": "flex flex-col gap-2" },
@@ -252,7 +252,7 @@ export function EditProfilePage() {
                                         createElement("span", { "className": "edit-label" },
                                             "邮箱"
                                         ),
-                                        createElement("input", { "className": "edit-field rounded-2xl px-4 py-3 font-body-md text-on-surface", "defaultValue": "mira@zfeed.app", "type": "email" })
+                                        createElement("input", { "className": "edit-field rounded-2xl px-4 py-3 font-body-md text-on-surface", "defaultValue": "mira@zfeed.app", "name": "email", "type": "email" })
                                     )
                                 ),
                                 createElement("div", { "className": "flex flex-col gap-3" },

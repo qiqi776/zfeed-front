@@ -359,6 +359,138 @@ describe("App routes", () => {
         expect(screen.queryByText("raw failure")).not.toBeInTheDocument();
     });
 
+    it("follows a profile author with Bearer auth and optimistic feedback", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "follow-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ is_followed: true }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        const followButton = (await screen.findAllByRole("button", { name: /关注/ }))[0];
+        fireEvent.click(followButton);
+
+        expect(await screen.findByRole("button", { name: "已关注" })).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/followings", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer follow-token"
+            }),
+            body: JSON.stringify({ target_user_id: "1001" })
+        })));
+    });
+
+    it("posts a content comment with optimistic insertion and clears the composer", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "comment-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ comment_id: "5001" }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        const composer = await screen.findByPlaceholderText("写下你的观点，补充或提问...");
+        fireEvent.change(composer, { target: { value: "这条评论来自真实接口" } });
+        fireEvent.click(screen.getByRole("button", { name: "发送" }));
+
+        expect(await screen.findByText("这条评论来自真实接口")).toBeInTheDocument();
+        await waitFor(() => expect(composer).toHaveValue(""));
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer comment-token"
+            }),
+            body: JSON.stringify({
+                content_id: "1001",
+                scene: "content",
+                comment: "这条评论来自真实接口",
+                content_user_id: "1001"
+            })
+        })));
+    });
+
+    it("saves edited profile fields with validation and Bearer auth", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "profile-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({
+            user_info: {
+                user_id: 7,
+                mobile: "13800138000",
+                nickname: "Mira Updated",
+                avatar: "",
+                bio: "新的简介",
+                gender: 0,
+                status: 1,
+                email: "mira.updated@example.com",
+                birthday: 0
+            }
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/me/edit");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("昵称"), { target: { value: "Mira Updated" } });
+        fireEvent.change(screen.getByLabelText("简介"), { target: { value: "新的简介" } });
+        fireEvent.change(screen.getByLabelText("邮箱"), { target: { value: "mira.updated@example.com" } });
+        fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+        expect(await screen.findByText("资料已保存")).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/users/me/profile", expect.objectContaining({
+            method: "PUT",
+            headers: expect.objectContaining({
+                Authorization: "Bearer profile-token"
+            }),
+            body: JSON.stringify({
+                nickname: "Mira Updated",
+                bio: "新的简介",
+                email: "mira.updated@example.com"
+            })
+        })));
+    });
+
+    it("publishes an article from compose and routes to the new content", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "publish-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ content_id: 6789 }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/compose");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByPlaceholderText("标题"), { target: { value: "一篇真实发布的文章" } });
+        fireEvent.change(screen.getByPlaceholderText("写下你的想法..."), { target: { value: "这是正文内容" } });
+        fireEvent.click(screen.getByRole("button", { name: "发布" }));
+
+        expect(await screen.findByRole("button", { name: "发布中" })).toBeDisabled();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/content/article/publish", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer publish-token"
+            }),
+            body: JSON.stringify({
+                title: "一篇真实发布的文章",
+                description: "这是正文内容",
+                content: "这是正文内容",
+                visibility: 1
+            })
+        })));
+        await waitFor(() => expect(window.location.pathname).toBe("/content/6789"));
+    });
+
     it("opens internal links inside the React app without a full page navigation", async () => {
         window.history.pushState({}, "", "/home");
 

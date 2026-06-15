@@ -10,6 +10,45 @@ type ContentActionBody = {
     contentId: string;
 };
 
+type FollowUserBody = {
+    target_user_id: string;
+};
+
+type CommentBody = {
+    content_id: string;
+    scene: "content";
+    comment: string;
+    content_user_id: string;
+    parent_id?: string;
+    root_id?: string;
+    reply_to_user_id?: string;
+};
+
+type DeleteCommentBody = {
+    comment_id: string;
+    content_id: string;
+    scene: "content";
+    root_id?: string;
+    parent_id?: string;
+};
+
+type UpdateProfileBody = {
+    nickname?: string;
+    avatar?: string;
+    bio?: string;
+    gender?: number;
+    email?: string;
+    birthday?: number;
+};
+
+type PublishArticleBody = {
+    title: string;
+    description?: string;
+    cover?: string;
+    content: string;
+    visibility: number;
+};
+
 export class ApiError extends Error {
     constructor(
         public readonly status: number,
@@ -105,6 +144,14 @@ export function register<T>(body: Record<string, string | undefined>) {
     return apiRequest<T>("/v1/users", { method: "POST", body });
 }
 
+export function updateProfile<T>(body: UpdateProfileBody) {
+    return apiRequest<T>("/v1/users/me/profile", { method: "PUT", body, auth: true });
+}
+
+export function publishArticle<T>(body: PublishArticleBody) {
+    return apiRequest<T>("/v1/content/article/publish", { method: "POST", body, auth: true });
+}
+
 export function likeContent<T = unknown>(body: ContentActionBody) {
     return apiRequest<T>("/v1/interaction/like", { method: "POST", body, auth: true });
 }
@@ -119,4 +166,20 @@ export function favoriteContent<T = unknown>(body: ContentActionBody) {
 
 export function unfavoriteContent<T = unknown>(body: ContentActionBody) {
     return apiRequest<T>("/v1/interaction/favorite", { method: "DELETE", body, auth: true });
+}
+
+export function commentContent<T = unknown>(body: CommentBody) {
+    return apiRequest<T>("/v1/interaction/comment", { method: "POST", body, auth: true });
+}
+
+export function deleteComment<T = unknown>(body: DeleteCommentBody) {
+    return apiRequest<T>("/v1/interaction/comment", { method: "DELETE", body, auth: true });
+}
+
+export function followUser<T = unknown>(body: FollowUserBody) {
+    return apiRequest<T>("/v1/interaction/followings", { method: "POST", body, auth: true });
+}
+
+export function unfollowUser<T = unknown>(body: FollowUserBody) {
+    return apiRequest<T>("/v1/interaction/followings", { method: "DELETE", body, auth: true });
 }

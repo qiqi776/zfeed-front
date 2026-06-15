@@ -20,16 +20,18 @@ export function ComposePage() {
                     createElement("a", { className: "text-label-sm text-primary", href: "/home" }, "返回首页"),
                     createElement("h1", { className: "mt-5 font-display text-[34px] leading-tight text-on-surface" }, "发布"),
                     session
-                        ? createElement("div", { className: "mt-6 grid gap-4" },
+                        ? createElement("div", { className: "mt-6 grid gap-4", "data-compose-form": "true" },
                             createElement("input", {
                                 className: "auth-field rounded-2xl px-4 py-3 text-[15px] text-on-surface",
                                 maxLength: 80,
+                                name: "title",
                                 placeholder: "标题",
                                 type: "text"
                             }),
                             createElement("textarea", {
                                 className: "auth-field min-h-56 resize-none rounded-2xl px-4 py-3 text-[15px] text-on-surface",
                                 maxLength: 5000,
+                                name: "content",
                                 placeholder: "写下你的想法...",
                                 rows: 10
                             }),
