@@ -64,11 +64,24 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     const request = options.auth ? authorizedFetch : rawFetch;
     const response = await request(path, options);
 
+    return parseJsonResponse<T>(response);
+}
+
+async function parseJsonResponse<T>(response: Response): Promise<T> {
     if (response.status === 204) {
         return undefined as T;
     }
 
-    return response.json() as Promise<T>;
+    const body = await response.text();
+    if (!body) {
+        return undefined as T;
+    }
+
+    try {
+        return JSON.parse(body) as T;
+    } catch {
+        throw new ApiError(response.status, "响应解析失败，请稍后重试");
+    }
 }
 
 export function authorizedFetch(path: string, options: RequestOptions = {}) {

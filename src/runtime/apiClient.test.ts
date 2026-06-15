@@ -154,4 +154,16 @@ describe("apiClient", () => {
             message: "网络连接失败，请稍后重试"
         });
     });
+
+    it("normalizes invalid JSON responses instead of leaking parser errors", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => new Response("{bad json", {
+            headers: { "Content-Type": "application/json" },
+            status: 200
+        })));
+
+        await expect(apiRequest("/v1/feed/recommend")).rejects.toMatchObject({
+            status: 200,
+            message: "响应解析失败，请稍后重试"
+        });
+    });
 });
