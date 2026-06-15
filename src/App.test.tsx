@@ -1289,6 +1289,39 @@ describe("App routes", () => {
         })));
     });
 
+    it("rolls back a failed profile follow without exposing raw backend errors", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "follow-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return jsonResponse(userProfilePayload());
+            }
+            if (input === "/v1/feed/user/publish") {
+                return jsonResponse(userPublishedFeedPayload());
+            }
+
+            return jsonResponse({ message: "raw follow failure" }, { status: 500 });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        const followButton = (await screen.findAllByRole("button", { name: "关注" }))[0];
+        fireEvent.click(followButton);
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/followings", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ target_user_id: "1001" })
+        })));
+        await waitFor(() => expect(followButton.textContent?.trim()).toBe("关注"));
+        expect(followButton).not.toBeDisabled();
+        expect(screen.queryByText("raw follow failure")).not.toBeInTheDocument();
+    });
+
     it("follows a recommended detail author with the recommended user id", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "detail-follow-token",
@@ -1602,6 +1635,30 @@ describe("App routes", () => {
                 root_id: "3003"
             })
         })));
+    });
+
+    it("restores a deleted comment and shows a safe error when delete fails", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "delete-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ message: "raw delete failure" }, { status: 500 }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        const comment = "评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。";
+        expect(await screen.findByText(comment)).toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", { name: "删除评论" }));
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
+            method: "DELETE"
+        })));
+        expect(await screen.findByText(comment)).toBeInTheDocument();
+        expect(await screen.findByText("删除失败，请重试")).toBeInTheDocument();
+        expect(screen.queryByText("raw delete failure")).not.toBeInTheDocument();
     });
 
     it("saves edited profile fields with validation and Bearer auth", async () => {

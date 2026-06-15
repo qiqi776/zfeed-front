@@ -889,12 +889,22 @@ function captureButtonState(button: HTMLElement) {
 
 function restoreButtonState(button: HTMLElement, snapshot: { className: string; text: string }) {
     button.className = snapshot.className;
+    if (isFollowButtonText(snapshot.text)) {
+        button.textContent = snapshot.text;
+        return;
+    }
+
     const label = findActionLabel(button);
     if (label && snapshot.text.includes("已保存")) {
         label.textContent = "已保存";
     } else if (label && snapshot.text.includes("收藏")) {
         label.textContent = "收藏";
     }
+}
+
+function isFollowButtonText(text: string) {
+    const normalizedText = text.trim().replace(/\s+/g, "");
+    return normalizedText === "关注" || normalizedText === "关注作者" || normalizedText === "已关注";
 }
 
 function applyOptimisticState(button: HTMLElement, action: { kind: "like" | "favorite"; nextActive: boolean }) {
