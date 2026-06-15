@@ -1,6 +1,6 @@
 import { createElement, useEffect, useState } from "react";
 import { PageShell } from "../runtime/PageShell";
-import { getMe } from "../runtime/apiClient";
+import { getMe, ApiError } from "../runtime/apiClient";
 import { authSessionStorageKey, clearAuthSession, readAuthSession, saveAuthSession } from "../runtime/authStore";
 import type { AuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
@@ -54,14 +54,16 @@ export function AuthGatewayPage() {
                 isActive = false;
                 navigateTo("/home");
             })
-            .catch(() => {
+            .catch((error: unknown) => {
                 if (!isActive) {
                     return;
                 }
 
                 window.clearTimeout(restoreTimer);
                 isActive = false;
-                clearAuthSession();
+                if (isAuthError(error)) {
+                    clearAuthSession();
+                }
                 navigateTo("/home");
             });
 
@@ -112,4 +114,8 @@ export function AuthGatewayPage() {
             )
         )
     );
+}
+
+function isAuthError(error: unknown) {
+    return error instanceof ApiError && (error.status === 401 || error.status === 403);
 }

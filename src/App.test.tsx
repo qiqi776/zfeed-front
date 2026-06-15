@@ -178,6 +178,34 @@ describe("App routes", () => {
         expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
     });
 
+    it("keeps the restored session when validation fails for a non-auth reason", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "valid-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return jsonResponse({ message: "server unavailable" }, { status: 500 });
+            }
+
+            return jsonResponse(recommendFeedPayload());
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/");
+
+        render(<App />);
+
+        await waitFor(() => expect(window.location.pathname).toBe("/home"));
+        expect(window.localStorage.getItem("zfeed.auth.session")).not.toBeNull();
+        expect(await screen.findByText("用 AI 构建产品：30 天从 0 到 1")).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/feed/recommend", expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: "Bearer valid-token"
+            })
+        })));
+    });
+
     it("clears a locally expired root session and enters the guest home feed", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "locally-expired-token",
