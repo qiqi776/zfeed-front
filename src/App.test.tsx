@@ -273,6 +273,44 @@ describe("App routes", () => {
         expect(screen.queryByText("用 AI 构建产品：30 天从 0 到 1")).not.toBeInTheDocument();
     });
 
+    it("returns the home feed to guest mode when optional auth is rejected", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "expired-home-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+            if ((init?.headers as Record<string, string> | undefined)?.Authorization) {
+                return jsonResponse({ message: "raw token rejected" }, { status: 403 });
+            }
+
+            return jsonResponse(recommendFeedPayload([
+                defaultRecommendFeedItem({
+                    title: "游客模式推荐内容"
+                })
+            ]));
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "游客模式推荐内容" })).toBeInTheDocument();
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/feed/recommend", expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: "Bearer expired-home-token"
+            })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/v1/feed/recommend", expect.objectContaining({
+            headers: expect.not.objectContaining({
+                Authorization: expect.any(String)
+            })
+        }));
+        expect(screen.queryByText("raw token rejected")).not.toBeInTheDocument();
+    });
+
     it("loads the signed-in following feed from the API", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "following-token",

@@ -5,6 +5,7 @@ type RequestOptions = {
     body?: unknown;
     auth?: boolean;
     optionalAuth?: boolean;
+    fallbackToGuestOnAuthFailure?: boolean;
 };
 
 type ContentActionBody = {
@@ -97,9 +98,23 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const request = options.auth ? authorizedFetch : rawFetch;
-    const response = await request(path, options);
+    const response = await request(path, options).catch((error: unknown) => {
+        if (!shouldRetryAsGuest(error, options)) {
+            throw error;
+        }
+
+        return rawFetch(path, {
+            ...options,
+            optionalAuth: false,
+            fallbackToGuestOnAuthFailure: false
+        });
+    });
 
     return parseJsonResponse<T>(response);
+}
+
+function shouldRetryAsGuest(error: unknown, options: RequestOptions) {
+    return Boolean(options.optionalAuth && options.fallbackToGuestOnAuthFailure && isAuthError(error));
 }
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
@@ -194,6 +209,10 @@ function isAbsoluteHttpUrl(path: string) {
     return /^https?:\/\//i.test(path);
 }
 
+function isAuthError(error: unknown) {
+    return error instanceof ApiError && (error.status === 401 || error.status === 403);
+}
+
 export function getMe<T>() {
     return apiRequest<T>("/v1/users/me", { auth: true });
 }
@@ -207,7 +226,7 @@ export function register<T>(body: Record<string, string | undefined>) {
 }
 
 export function getRecommendFeed<T>(body: RecommendFeedBody) {
-    return apiRequest<T>("/v1/feed/recommend", { method: "POST", body, optionalAuth: true });
+    return apiRequest<T>("/v1/feed/recommend", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function getFollowFeed<T>(body: FollowFeedBody) {
