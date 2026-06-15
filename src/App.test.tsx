@@ -127,11 +127,27 @@ describe("App routes", () => {
     });
 
     it("renders the following feed from the modern following path", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "following-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
         window.history.pushState({}, "", "/following");
 
         render(<App />);
 
         expect(await screen.findByText("我关注的创作者今天都在用 AI 重构工作流")).toBeInTheDocument();
+    });
+
+    it("shows an auth-required state on following when signed out", async () => {
+        window.history.pushState({}, "", "/following");
+
+        render(<App />);
+
+        const authState = await screen.findByText("登录后才能查看关注流。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
+        expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Ffollowing");
+        expect(screen.queryByText("我关注的创作者今天都在用 AI 重构工作流")).not.toBeInTheDocument();
     });
 
     it("renders the me route", async () => {

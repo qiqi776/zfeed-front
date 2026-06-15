@@ -19,7 +19,7 @@ const routes = [
 
 for (const [route, text] of routes) {
     test(`renders ${route}`, async ({ page }) => {
-        if (route === "/me") {
+        if (route === "/following" || route === "/me") {
             await seedAuthSession(page);
         }
 
@@ -90,6 +90,13 @@ test("requires auth for the me route", async ({ page }) => {
     await page.goto("/me", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByText("登录后才能查看我的主页。")).toBeVisible();
+    await expect(page.locator("[data-page-state='auth-required']")).toBeVisible();
+});
+
+test("requires auth for the following route", async ({ page }) => {
+    await page.goto("/following", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText("登录后才能查看关注流。")).toBeVisible();
     await expect(page.locator("[data-page-state='auth-required']")).toBeVisible();
 });
 
