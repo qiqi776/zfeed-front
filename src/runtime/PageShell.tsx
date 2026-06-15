@@ -547,7 +547,15 @@ function handlePublishClick(event: MouseEvent) {
         visibility: 1
     }).then((result) => {
         const contentId = result.content_id ?? result.contentId;
-        window.setTimeout(() => navigateTo(`/content/${contentId ?? ""}`), 0);
+        if (!contentId) {
+            showFormStatus(form, "发布失败，请重试", "error");
+            button.textContent = previousText;
+            button.disabled = false;
+            delete button.dataset.pending;
+            return;
+        }
+
+        window.setTimeout(() => navigateTo(`/content/${contentId}`), 0);
     }).catch((error: unknown) => {
         showFormStatus(form, "发布失败，请重试", "error");
         button.textContent = previousText;

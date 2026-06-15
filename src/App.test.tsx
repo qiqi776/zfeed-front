@@ -1761,6 +1761,49 @@ describe("App routes", () => {
         await waitFor(() => expect(window.location.pathname).toBe("/content/6789"));
     });
 
+    it("validates compose title and content before publishing", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "publish-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/compose");
+
+        render(<App />);
+
+        fireEvent.click(await screen.findByRole("button", { name: "发布" }));
+
+        expect(await screen.findByText("请输入标题")).toBeInTheDocument();
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(window.location.pathname).toBe("/compose");
+    });
+
+    it("keeps compose recoverable when publish succeeds without a content id", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "publish-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({}));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/compose");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByPlaceholderText("标题"), { target: { value: "缺少 ID 的发布响应" } });
+        fireEvent.change(screen.getByPlaceholderText("写下你的想法..."), { target: { value: "后端响应成功但没有内容 ID。" } });
+        fireEvent.click(screen.getByRole("button", { name: "发布" }));
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/content/article/publish", expect.objectContaining({
+            method: "POST"
+        })));
+        expect(await screen.findByText("发布失败，请重试")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "发布" })).not.toBeDisabled();
+        expect(window.location.pathname).toBe("/compose");
+    });
+
     it("submits the search page input back into the product search route", async () => {
         window.history.pushState({}, "", "/search");
 
