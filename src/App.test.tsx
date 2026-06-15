@@ -658,6 +658,31 @@ describe("App routes", () => {
         })));
     });
 
+    it("disables the edit profile save button while the request is pending", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "profile-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        let resolveProfileSave!: (response: Response) => void;
+        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+            resolveProfileSave = resolve;
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/me/edit");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("昵称"), { target: { value: "Mira Pending" } });
+        fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+        expect(await screen.findByRole("button", { name: /保存中/ })).toBeDisabled();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        resolveProfileSave(jsonResponse({}));
+        expect(await screen.findByText("资料已保存")).toBeInTheDocument();
+    });
+
     it("publishes an article from compose and routes to the new content", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "publish-token",

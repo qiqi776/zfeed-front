@@ -467,6 +467,7 @@ function handleProfileSaveClick(event: MouseEvent) {
     }
 
     button.dataset.pending = "true";
+    button.disabled = true;
     const previousText = button.textContent ?? "保存";
     button.textContent = "保存中";
 
@@ -483,6 +484,7 @@ function handleProfileSaveClick(event: MouseEvent) {
         }
     }).finally(() => {
         button.textContent = previousText;
+        button.disabled = false;
         delete button.dataset.pending;
     });
 }
