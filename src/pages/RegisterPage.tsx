@@ -81,10 +81,14 @@ export function RegisterPage() {
 
                             if (!phone.trim()) {
                                 nextErrors.phone = "请输入手机号";
+                            } else if (!isValidMobile(phone.trim())) {
+                                nextErrors.phone = "请输入有效手机号";
                             }
 
                             if (!password.trim()) {
                                 nextErrors.password = "请输入密码";
+                            } else if (password.length < 6) {
+                                nextErrors.password = "密码至少 6 位";
                             }
 
                             if (nickname.length > 64) {
@@ -227,4 +231,8 @@ function isLikelyUrl(value: string) {
     } catch {
         return false;
     }
+}
+
+function isValidMobile(value: string) {
+    return /^1[3-9]\d{9}$/.test(value);
 }

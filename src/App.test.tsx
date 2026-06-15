@@ -347,6 +347,22 @@ describe("App routes", () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it("validates register phone format and password length before submitting", async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/register");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("手机号"), { target: { value: "12345" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "12345" } });
+        fireEvent.click(screen.getByRole("button", { name: "注册" }));
+
+        expect(await screen.findByText("请输入有效手机号")).toBeInTheDocument();
+        expect(screen.getByText("密码至少 6 位")).toBeInTheDocument();
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("submits register, stores the session, and enters me", async () => {
         const fetchMock = vi.fn(async () => jsonResponse({
             user_id: 9,
