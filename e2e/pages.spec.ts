@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const routes = [
-    ["/", "登录或注册 zfeed"],
+    ["/", "登录 zfeed"],
     ["/home", "用 AI 构建产品：30 天从 0 到 1"],
     ["/following", "我关注的创作者今天都在用 AI 重构工作流"],
     ["/login", "登录 zfeed"],
@@ -24,6 +24,14 @@ for (const [route, text] of routes) {
         await expect(page.locator("body")).toHaveCSS("overflow-x", "hidden");
     });
 }
+
+test("uses the frosted home backdrop on auth entry pages", async ({ page }) => {
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTitle("zfeed 首页雾化背景")).toBeVisible();
+
+    await page.goto("/register", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTitle("zfeed 首页雾化背景")).toBeVisible();
+});
 
 test("captures stable desktop and mobile feed screenshots", async ({ page }, testInfo) => {
     await page.goto("/home", { waitUntil: "domcontentloaded" });

@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-The app opens the auth gateway at `/`, with a frosted-home backdrop and direct links to `/login` and `/register`. The recommend feed lives at `/home`, with product routes such as `/following`, `/me`, `/user/:userId`, `/content/:contentId`, `/me/edit`, `/search`, `/compose`, and `/settings`.
+The app opens the session gateway at `/`. A valid local session is restored with `GET /v1/users/me` and enters `/home`; an unauthenticated first visit redirects to `/login`, where the login and register entries share the frosted-home backdrop. The recommend feed lives at `/home`, with product routes such as `/following`, `/me`, `/user/:userId`, `/content/:contentId`, `/me/edit`, `/search`, `/compose`, and `/settings`.
 
 ## Verification
 
