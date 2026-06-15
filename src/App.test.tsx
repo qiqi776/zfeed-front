@@ -380,6 +380,16 @@ describe("App routes", () => {
         expect(screen.queryByPlaceholderText("标题")).not.toBeInTheDocument();
     });
 
+    it("shows an auth-required state on settings when signed out", async () => {
+        window.history.pushState({}, "", "/settings");
+
+        render(<App />);
+
+        expect(await screen.findByText("登录后才能管理设置。")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fsettings");
+        expect(screen.queryByText("账号与安全")).not.toBeInTheDocument();
+    });
+
     it("opens search from the global search box", async () => {
         window.history.pushState({}, "", "/home");
 
