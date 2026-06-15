@@ -7,6 +7,9 @@ import {
     deleteComment,
     favoriteContent,
     getApiBaseUrl,
+    getContentDetail,
+    getFollowFeed,
+    getRecommendFeed,
     likeContent,
     searchContents,
     searchUsers,
@@ -135,6 +138,41 @@ describe("apiClient", () => {
                 Authorization: "Bearer search-token"
             }),
             body: JSON.stringify({ query: "Mira", page_size: 10, mode: "relevance" })
+        }));
+    });
+
+    it("serializes optional read helpers for feed and content detail", async () => {
+        saveAuthSession({
+            token: "reader-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        const fetchMock = vi.fn(async () => jsonResponse({ items: [], has_more: false }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await getRecommendFeed({ cursor: "", page_size: 20, snapshot_id: "snap-1" });
+        await getFollowFeed({ cursor: "", page_size: 20 });
+        await getContentDetail({ content_id: "1001" });
+
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/feed/recommend", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            }),
+            body: JSON.stringify({ cursor: "", page_size: 20, snapshot_id: "snap-1" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/v1/feed/follow", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            }),
+            body: JSON.stringify({ cursor: "", page_size: 20 })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(3, "/v1/content/detail", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            }),
+            body: JSON.stringify({ content_id: "1001" })
         }));
     });
 

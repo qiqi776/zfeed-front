@@ -63,6 +63,21 @@ type SearchRequestBody = {
     snapshot_id?: string;
 };
 
+type RecommendFeedBody = {
+    cursor: string;
+    page_size: number;
+    snapshot_id?: string;
+};
+
+type FollowFeedBody = {
+    cursor: string;
+    page_size: number;
+};
+
+type ContentDetailBody = {
+    content_id: string;
+};
+
 export class ApiError extends Error {
     constructor(
         public readonly status: number,
@@ -181,6 +196,18 @@ export function login<T>(body: { mobile: string; password: string }) {
 
 export function register<T>(body: Record<string, string | undefined>) {
     return apiRequest<T>("/v1/users", { method: "POST", body });
+}
+
+export function getRecommendFeed<T>(body: RecommendFeedBody) {
+    return apiRequest<T>("/v1/feed/recommend", { method: "POST", body, optionalAuth: true });
+}
+
+export function getFollowFeed<T>(body: FollowFeedBody) {
+    return apiRequest<T>("/v1/feed/follow", { method: "POST", body, optionalAuth: true });
+}
+
+export function getContentDetail<T>(body: ContentDetailBody) {
+    return apiRequest<T>("/v1/content/detail", { method: "POST", body, optionalAuth: true });
 }
 
 export function searchContents<T>(body: SearchRequestBody) {
