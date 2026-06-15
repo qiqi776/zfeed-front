@@ -74,7 +74,7 @@ export function AuthGatewayPage() {
     return createElement(
         PageShell,
         {
-            title: "zfeed - 登录或注册",
+            title: "zfeed - 启动中",
             htmlClass: "light",
             bodyClass: sharedGlassBodyClass,
             styles: sharedGlassStyles
@@ -102,28 +102,11 @@ export function AuthGatewayPage() {
                     createElement("div", { className: "mt-7" },
                         createElement("h1", {
                             className: "font-display text-[34px] leading-tight text-on-surface md:text-[38px]"
-                        }, isRestoring ? "正在恢复 zfeed 会话" : "登录或注册 zfeed"),
+                        }, isRestoring ? "正在恢复 zfeed 会话" : "正在进入 zfeed"),
                         createElement("p", {
                             className: "mt-3 text-[15px] leading-7 text-on-surface-variant"
-                        }, isRestoring ? "如果登录状态失效，会自动进入游客首页。" : "首页已经准备好，登录后继续你的信息流；也可以先以游客身份浏览公开内容。")
-                    ),
-                    createElement("div", { className: "mt-7 grid gap-3 sm:grid-cols-2" },
-                        createElement("a", {
-                            className:
-                                "glass-button-primary inline-flex min-h-12 items-center justify-center rounded-full px-5 py-3 text-white font-label-sm",
-                            href: "/login"
-                        }, "登录"),
-                        createElement("a", {
-                            className:
-                                "glass-button-ghost inline-flex min-h-12 items-center justify-center rounded-full px-5 py-3 text-primary font-label-sm",
-                            href: "/register"
-                        }, "注册")
-                    ),
-                    createElement("a", {
-                        className:
-                            "mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full px-4 py-2.5 text-primary font-label-sm hover:bg-white/30",
-                        href: "/home"
-                    }, "先浏览首页")
+                        }, isRestoring ? "最多等待 5 秒，失效或超时后会自动进入游客首页。" : "正在打开登录入口。")
+                    )
                 )
             )
         )

@@ -67,4 +67,11 @@ describe("React page structure", () => {
 
         expect(offenders).toEqual([]);
     });
+
+    it("does not keep the obsolete auth choice surface in the session gateway", () => {
+        const source = readFileSync(join(root, "src/pages/AuthGatewayPage.tsx"), "utf8");
+
+        expect(source).not.toContain("登录或注册 zfeed");
+        expect(source).not.toContain("先浏览首页");
+    });
 });
