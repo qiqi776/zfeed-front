@@ -156,6 +156,23 @@ img {
     box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.76), 0 24px 60px rgba(54, 83, 121, 0.12);
 }
 
+.auth-alert {
+    background: rgba(255, 255, 255, 0.42);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.72), 0 10px 26px rgba(54, 83, 121, 0.08);
+}
+
+.auth-alert-error {
+    color: #9f2a24;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.54), rgba(255, 245, 245, 0.62)),
+        rgba(255, 255, 255, 0.38);
+    border-color: rgba(200, 66, 58, 0.22);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.78), 0 12px 30px rgba(200, 66, 58, 0.08);
+}
+
 .auth-gateway-root {
     position: relative;
     min-height: 100vh;

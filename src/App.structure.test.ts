@@ -74,4 +74,15 @@ describe("React page structure", () => {
         expect(source).not.toContain("登录或注册 zfeed");
         expect(source).not.toContain("先浏览首页");
     });
+
+    it("keeps auth entry error states on the shared glass surface", () => {
+        const loginSource = readFileSync(join(root, "src/pages/LoginPage.tsx"), "utf8");
+        const registerSource = readFileSync(join(root, "src/pages/RegisterPage.tsx"), "utf8");
+        const sharedStyles = readFileSync(join(root, "src/pages/sharedGlassStyles.ts"), "utf8");
+
+        expect(sharedStyles).toContain(".auth-alert");
+        expect(loginSource).toContain("auth-alert auth-alert-error");
+        expect(registerSource).toContain("auth-alert auth-alert-error");
+        expect(loginSource + registerSource).not.toContain("bg-red-50");
+    });
 });

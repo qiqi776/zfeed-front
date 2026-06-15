@@ -64,7 +64,7 @@ export function LoginPage() {
                         }, "返回内容流，继续你上次停下的地方。")
                     ),
                     errors.form
-                        ? createElement("div", { className: "mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700" }, errors.form)
+                        ? createElement("div", { className: "auth-alert auth-alert-error mt-4 rounded-2xl px-4 py-3 text-[13px]" }, errors.form)
                         : null,
                     createElement("form", {
                         className: "mt-6 grid gap-4",
