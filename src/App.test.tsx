@@ -164,6 +164,7 @@ describe("App routes", () => {
         window.history.pushState({}, "", "/search");
         render(<App />);
         expect(await screen.findByRole("heading", { name: "搜索" })).toBeInTheDocument();
+        expect(screen.getByText("输入关键词开始搜索")).toBeInTheDocument();
         unmount();
 
         window.history.pushState({}, "", "/compose");

@@ -26,7 +26,13 @@ export function SearchPage() {
                             type: "search"
                         })
                     ),
-                    createElement("p", { className: "mt-5 text-[14px] leading-7 text-on-surface-variant" }, "输入关键词后会展示内容和用户结果。")
+                    createElement("div", {
+                        className: "mt-6 rounded-2xl border border-white/40 bg-white/35 px-4 py-4",
+                        "data-page-state": "empty"
+                    },
+                        createElement("div", { className: "font-label-sm text-on-surface" }, "输入关键词开始搜索"),
+                        createElement("p", { className: "mt-1 text-[14px] leading-7 text-on-surface-variant" }, "支持搜索内容、创作者或话题。")
+                    )
                 )
             )
         )
