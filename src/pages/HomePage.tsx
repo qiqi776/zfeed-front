@@ -352,9 +352,9 @@ function renderRightRail(state: RecommendFeedState) {
             createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
                 createElement("h3", { className: "font-headline-md text-[16px] text-on-surface mb-4" }, "为你推荐"),
                 createElement("div", { className: "flex flex-col gap-3" },
-                    renderSuggestedUser("Zhang Xiaolong", "产品经理"),
-                    renderSuggestedUser("Chen Zhiyuan", "界面设计师"),
-                    renderSuggestedUser("AI 前线", "科技媒体")
+                    renderSuggestedUser("2001", "Zhang Xiaolong", "产品经理"),
+                    renderSuggestedUser("2002", "Chen Zhiyuan", "界面设计师"),
+                    renderSuggestedUser("2003", "AI 前线", "科技媒体")
                 )
             )
         )
@@ -368,13 +368,17 @@ function renderMetric(label: string, value: string) {
     );
 }
 
-function renderSuggestedUser(name: string, role: string) {
+function renderSuggestedUser(userId: string, name: string, role: string) {
     return createElement("div", { className: "flex items-center justify-between gap-3" },
         createElement("div", { className: "min-w-0" },
             createElement("div", { className: "truncate font-headline-md text-[14px]" }, name),
             createElement("div", { className: "font-meta-xs text-on-surface-variant" }, role)
         ),
-        createElement("button", { className: "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300", type: "button" }, "关注")
+        createElement("button", {
+            className: "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300",
+            "data-user-id": userId,
+            type: "button"
+        }, "关注")
     );
 }
 
