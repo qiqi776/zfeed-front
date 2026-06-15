@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
@@ -83,6 +83,34 @@ describe("App routes", () => {
 
         await waitFor(() => expect(window.location.pathname).toBe("/home"));
         expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+    });
+
+    it("falls back to the guest home feed when session restore never resolves", async () => {
+        vi.useFakeTimers();
+        try {
+            window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+                token: "hanging-token",
+                expiredAt: Math.floor(Date.now() / 1000) + 3600
+            }));
+            vi.stubGlobal("fetch", vi.fn(() => new Promise(() => undefined)));
+            window.history.pushState({}, "", "/");
+
+            render(<App />);
+
+            await act(async () => {
+                await Promise.resolve();
+            });
+            expect(screen.getByRole("heading", { name: "正在恢复 zfeed 会话" })).toBeInTheDocument();
+
+            await act(async () => {
+                vi.advanceTimersByTime(5_000);
+            });
+
+            expect(window.location.pathname).toBe("/home");
+            expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it("renders the home recommend feed from the modern home path", async () => {

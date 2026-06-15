@@ -77,6 +77,10 @@ export function authorizedFetch(path: string, options: RequestOptions = {}) {
         return Promise.reject(new ApiError(401, "请先登录后再操作"));
     }
 
+    if (isAbsoluteHttpUrl(path)) {
+        return Promise.reject(new ApiError(400, "认证请求只能发送到站内 API"));
+    }
+
     return rawFetch(path, {
         ...options,
         auth: true
@@ -127,11 +131,15 @@ export function getApiBaseUrl() {
 
 function resolveApiUrl(path: string) {
     const baseUrl = getApiBaseUrl();
-    if (!baseUrl || /^https?:\/\//.test(path)) {
+    if (!baseUrl || isAbsoluteHttpUrl(path)) {
         return path;
     }
 
     return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function isAbsoluteHttpUrl(path: string) {
+    return /^https?:\/\//i.test(path);
 }
 
 export function getMe<T>() {

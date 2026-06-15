@@ -72,6 +72,22 @@ describe("apiClient", () => {
         expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
     });
 
+    it("blocks authenticated absolute URLs before sending the Bearer token", async () => {
+        saveAuthSession({
+            token: "secret-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(authorizedFetch("https://evil.example/v1/private")).rejects.toMatchObject({
+            status: 400,
+            message: "认证请求只能发送到站内 API"
+        });
+
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("blocks authenticated write operations before fetch when there is no valid session", async () => {
         const fetchMock = vi.fn();
         vi.stubGlobal("fetch", fetchMock);

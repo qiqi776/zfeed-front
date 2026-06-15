@@ -6,6 +6,8 @@ import type { AuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
+const restoreTimeoutMs = 5_000;
+
 export function AuthGatewayPage() {
     const [sessionToRestore] = useState<AuthSession | null>(() => readAuthSession());
     const isRestoring = sessionToRestore !== null;
@@ -16,6 +18,15 @@ export function AuthGatewayPage() {
         }
 
         let isActive = true;
+        const restoreTimer = window.setTimeout(() => {
+            if (!isActive) {
+                return;
+            }
+
+            isActive = false;
+            clearAuthSession();
+            navigateTo("/home");
+        }, restoreTimeoutMs);
 
         getMe<{
             user_info: {
@@ -37,6 +48,8 @@ export function AuthGatewayPage() {
                         avatar: response.user_info.avatar
                     }
                 });
+                window.clearTimeout(restoreTimer);
+                isActive = false;
                 navigateTo("/home");
             })
             .catch(() => {
@@ -44,12 +57,15 @@ export function AuthGatewayPage() {
                     return;
                 }
 
+                window.clearTimeout(restoreTimer);
+                isActive = false;
                 clearAuthSession();
                 navigateTo("/home");
             });
 
         return () => {
             isActive = false;
+            window.clearTimeout(restoreTimer);
         };
     }, [sessionToRestore]);
 
