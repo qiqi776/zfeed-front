@@ -36,6 +36,13 @@ test("captures stable desktop and mobile feed screenshots", async ({ page }, tes
 });
 
 test("keeps migrated edit profile form values visible", async ({ page }) => {
+    await page.addInitScript(() => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "e2e-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+    });
     await page.goto("/me/edit", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByLabel("昵称")).toHaveValue("Mira Chen");

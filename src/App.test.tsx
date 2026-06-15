@@ -181,6 +181,16 @@ describe("App routes", () => {
         expect(await screen.findByRole("heading", { name: "编辑资料" })).toBeInTheDocument();
     });
 
+    it("shows an auth-required state on edit profile when signed out", async () => {
+        window.history.pushState({}, "", "/me/edit");
+
+        render(<App />);
+
+        expect(await screen.findByText("登录后才能编辑资料。")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fme%2Fedit");
+        expect(screen.queryByLabelText("昵称")).not.toBeInTheDocument();
+    });
+
     it("renders the login route with the required fields", async () => {
         window.history.pushState({}, "", "/login");
 
