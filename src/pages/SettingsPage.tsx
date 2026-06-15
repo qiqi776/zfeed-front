@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { PageShell } from "../runtime/PageShell";
 import { readAuthSession } from "../runtime/authStore";
+import { PageState } from "./PageState";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 export function SettingsPage() {
@@ -30,10 +31,12 @@ export function SettingsPage() {
                             createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "控制推荐流和通知偏好。")
                         )
                     )
-                        : createElement("div", { className: "mt-6 rounded-2xl border border-white/40 bg-white/35 px-4 py-4 text-[14px] leading-7 text-on-surface-variant" },
-                            "登录后才能管理设置。",
-                            createElement("a", { className: "ml-2 text-primary font-label-sm", href: `/login?next=${encodeURIComponent("/settings")}` }, "去登录")
-                        )
+                        : createElement(PageState, {
+                            state: "auth-required",
+                            description: "登录后才能管理设置。",
+                            actionHref: `/login?next=${encodeURIComponent("/settings")}`,
+                            actionLabel: "去登录"
+                        })
                 )
             )
         )

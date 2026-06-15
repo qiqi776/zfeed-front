@@ -1,5 +1,6 @@
 import { createElement } from "react";
 import { PageShell } from "../runtime/PageShell";
+import { PageState } from "./PageState";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 export function SearchPage() {
@@ -26,13 +27,12 @@ export function SearchPage() {
                             type: "search"
                         })
                     ),
-                    createElement("div", {
-                        className: "mt-6 rounded-2xl border border-white/40 bg-white/35 px-4 py-4",
-                        "data-page-state": "empty"
-                    },
-                        createElement("div", { className: "font-label-sm text-on-surface" }, "输入关键词开始搜索"),
-                        createElement("p", { className: "mt-1 text-[14px] leading-7 text-on-surface-variant" }, "支持搜索内容、创作者或话题。")
-                    )
+                    createElement(PageState, {
+                        state: "empty",
+                        title: "输入关键词开始搜索",
+                        description: "支持搜索内容、创作者或话题。",
+                        className: "mt-6 rounded-2xl border border-white/40 bg-white/35 px-4 py-4"
+                    })
                 )
             )
         )

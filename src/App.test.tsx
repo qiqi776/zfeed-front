@@ -186,7 +186,8 @@ describe("App routes", () => {
 
         render(<App />);
 
-        expect(await screen.findByText("登录后才能编辑资料。")).toBeInTheDocument();
+        const authState = await screen.findByText("登录后才能编辑资料。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
         expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fme%2Fedit");
         expect(screen.queryByLabelText("昵称")).not.toBeInTheDocument();
     });
@@ -434,7 +435,8 @@ describe("App routes", () => {
 
         render(<App />);
 
-        expect(await screen.findByText("发布需要登录。")).toBeInTheDocument();
+        const authState = await screen.findByText("发布需要登录。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
         expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fcompose");
         expect(screen.queryByPlaceholderText("标题")).not.toBeInTheDocument();
     });
@@ -444,7 +446,8 @@ describe("App routes", () => {
 
         render(<App />);
 
-        expect(await screen.findByText("登录后才能管理设置。")).toBeInTheDocument();
+        const authState = await screen.findByText("登录后才能管理设置。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
         expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fsettings");
         expect(screen.queryByText("账号与安全")).not.toBeInTheDocument();
     });
@@ -846,6 +849,7 @@ describe("App routes", () => {
         render(<App />);
 
         const searchInput = await screen.findByPlaceholderText("搜索内容、创作者或话题");
+        expect(screen.getByText("输入关键词开始搜索").closest("[data-page-state]")).toHaveAttribute("data-page-state", "empty");
         fireEvent.change(searchInput, { target: { value: "设计 系统" } });
         fireEvent.keyDown(searchInput, { key: "Enter" });
 

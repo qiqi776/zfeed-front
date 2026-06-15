@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { PageShell } from "../runtime/PageShell";
 import { readAuthSession } from "../runtime/authStore";
+import { PageState } from "./PageState";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 export function ComposePage() {
@@ -40,10 +41,12 @@ export function ComposePage() {
                                 type: "button"
                             }, "发布")
                         )
-                        : createElement("div", { className: "mt-6 rounded-2xl border border-white/40 bg-white/35 px-4 py-4 text-[14px] leading-7 text-on-surface-variant" },
-                            "发布需要登录。",
-                            createElement("a", { className: "ml-2 text-primary font-label-sm", href: `/login?next=${encodeURIComponent("/compose")}` }, "去登录")
-                        )
+                        : createElement(PageState, {
+                            state: "auth-required",
+                            description: "发布需要登录。",
+                            actionHref: `/login?next=${encodeURIComponent("/compose")}`,
+                            actionLabel: "去登录"
+                        })
                 )
             )
         )
