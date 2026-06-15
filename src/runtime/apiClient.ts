@@ -234,7 +234,7 @@ export function getFollowFeed<T>(body: FollowFeedBody) {
 }
 
 export function getUserPublishedFeed<T>(body: UserPublishedFeedBody) {
-    return apiRequest<T>("/v1/feed/user/publish", { method: "POST", body, optionalAuth: true });
+    return apiRequest<T>("/v1/feed/user/publish", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function getContentDetail<T>(body: ContentDetailBody) {

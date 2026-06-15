@@ -216,6 +216,39 @@ describe("apiClient", () => {
         }));
     });
 
+    it("retries the user published feed as a guest when optional auth is rejected", async () => {
+        saveAuthSession({
+            token: "published-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+            if ((init?.headers as Record<string, string> | undefined)?.Authorization) {
+                return jsonResponse({ message: "raw auth failure" }, { status: 403 });
+            }
+
+            return jsonResponse({ items: [{ content_id: 9101 }], has_more: false });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(getUserPublishedFeed({ user_id: "1001", cursor: "", page_size: 20 })).resolves.toEqual({
+            items: [{ content_id: 9101 }],
+            has_more: false
+        });
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/feed/user/publish", expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: "Bearer published-token"
+            }),
+            body: JSON.stringify({ user_id: "1001", cursor: "", page_size: 20 })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/v1/feed/user/publish", expect.objectContaining({
+            headers: expect.not.objectContaining({
+                Authorization: expect.any(String)
+            }),
+            body: JSON.stringify({ user_id: "1001", cursor: "", page_size: 20 })
+        }));
+    });
+
     it("keeps follow feed auth failures as auth-required instead of retrying as a guest", async () => {
         saveAuthSession({
             token: "follow-token",
