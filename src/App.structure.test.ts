@@ -62,7 +62,6 @@ describe("React page structure", () => {
         }));
 
         const offenders = sources
-            .filter(({ file }) => file !== "LiquidGlassFeedPage.tsx")
             .filter(({ source }) => source.includes('"href": "#"') || source.includes('href: "#"'))
             .map(({ file }) => file);
 

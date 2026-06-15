@@ -10,7 +10,7 @@ export function LiquidGlassFeedPage() {
         createElement("div", { "className": "page-root" },
             createElement("header", { "className": "topbar glass", "aria-label": "顶部导航" },
                 createElement("div", { "className": "topbar-inner" },
-                    createElement("a", { "className": "brand", "href": "#", "aria-label": "Cirra 首页" },
+                    createElement("a", { "className": "brand", "href": "/home", "aria-label": "Cirra 首页" },
                         createElement("span", { "className": "brand-mark" },
                             "C"
                         ),
@@ -119,7 +119,7 @@ export function LiquidGlassFeedPage() {
                                 ),
                                 createElement("ul", { "className": "nav-list" },
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item active", "href": "#" },
+                                        createElement("a", { "className": "nav-item active", "href": "/home" },
                                             createElement("svg", { "xmlns": "http://www.w3.org/2000/svg", "width": "24", "height": "24", "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round", "data-lucide": "sparkles", "className": "lucide lucide-sparkles icon" },
                                                 createElement("path", { "d": "M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" }),
                                                 createElement("path", { "d": "M20 2v4" }),
@@ -133,7 +133,7 @@ export function LiquidGlassFeedPage() {
                                         )
                                     ),
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/following" },
                                             createElement("svg", { "xmlns": "http://www.w3.org/2000/svg", "width": "24", "height": "24", "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round", "data-lucide": "users", "className": "lucide lucide-users icon" },
                                                 createElement("path", { "d": "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" }),
                                                 createElement("path", { "d": "M16 3.128a4 4 0 0 1 0 7.744" }),
@@ -144,7 +144,7 @@ export function LiquidGlassFeedPage() {
                                         )
                                     ),
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/home" },
                                             createElement("svg", { "xmlns": "http://www.w3.org/2000/svg", "width": "24", "height": "24", "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round", "data-lucide": "flame", "className": "lucide lucide-flame icon" },
                                                 createElement("path", { "d": "M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" })
                                             ),
@@ -155,7 +155,7 @@ export function LiquidGlassFeedPage() {
                                         )
                                     ),
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/me" },
                                             createElement("svg", { "xmlns": "http://www.w3.org/2000/svg", "width": "24", "height": "24", "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round", "data-lucide": "bookmark", "className": "lucide lucide-bookmark icon" },
                                                 createElement("path", { "d": "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" })
                                             ),
@@ -163,7 +163,7 @@ export function LiquidGlassFeedPage() {
                                         )
                                     ),
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/home" },
                                             createElement("svg", { "xmlns": "http://www.w3.org/2000/svg", "width": "24", "height": "24", "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round", "data-lucide": "radio", "className": "lucide lucide-radio icon" },
                                                 createElement("path", { "d": "M16.247 7.761a6 6 0 0 1 0 8.478" }),
                                                 createElement("path", { "d": "M19.075 4.933a10 10 0 0 1 0 14.134" }),
@@ -182,25 +182,25 @@ export function LiquidGlassFeedPage() {
                                 ),
                                 createElement("ul", { "className": "nav-list" },
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/search?q=AI+%E4%BA%A7%E5%93%81" },
                                             createElement("span", { "className": "dot" }),
                                             "AI 产品"
                                         )
                                     ),
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/search?q=%E7%9F%A5%E8%AF%86%E7%A4%BE%E5%8C%BA" },
                                             createElement("span", { "className": "dot mint" }),
                                             "知识社区"
                                         )
                                     ),
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/search?q=%E7%95%8C%E9%9D%A2%E8%AE%BE%E8%AE%A1" },
                                             createElement("span", { "className": "dot violet" }),
                                             "界面设计"
                                         )
                                     ),
                                     createElement("li", null,
-                                        createElement("a", { "className": "nav-item", "href": "#" },
+                                        createElement("a", { "className": "nav-item", "href": "/search?q=%E5%88%9B%E4%BD%9C%E8%80%85%E7%BB%8F%E6%B5%8E" },
                                             createElement("span", { "className": "dot rose" }),
                                             "创作者经济"
                                         )
