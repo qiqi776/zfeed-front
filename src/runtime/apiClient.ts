@@ -4,6 +4,7 @@ type RequestOptions = {
     method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: unknown;
     auth?: boolean;
+    optionalAuth?: boolean;
 };
 
 type ContentActionBody = {
@@ -49,6 +50,17 @@ type PublishArticleBody = {
     cover?: string;
     content: string;
     visibility: number;
+};
+
+type SearchMode = "latest" | "relevance" | "hybrid";
+
+type SearchRequestBody = {
+    query: string;
+    cursor?: number;
+    page_size?: number;
+    mode?: SearchMode;
+    page_token?: string;
+    snapshot_id?: string;
 };
 
 export class ApiError extends Error {
@@ -114,7 +126,11 @@ async function rawFetch(path: string, options: RequestOptions = {}) {
         init.body = JSON.stringify(options.body);
     }
 
-    const session = options.auth ? readAuthSession() : null;
+    if ((options.auth || options.optionalAuth) && isAbsoluteHttpUrl(path)) {
+        throw new ApiError(400, "认证请求只能发送到站内 API");
+    }
+
+    const session = options.auth || options.optionalAuth ? readAuthSession() : null;
     if (session) {
         headers.Authorization = `Bearer ${session.token}`;
     }
@@ -165,6 +181,14 @@ export function login<T>(body: { mobile: string; password: string }) {
 
 export function register<T>(body: Record<string, string | undefined>) {
     return apiRequest<T>("/v1/users", { method: "POST", body });
+}
+
+export function searchContents<T>(body: SearchRequestBody) {
+    return apiRequest<T>("/v1/search/contents", { method: "POST", body, optionalAuth: true });
+}
+
+export function searchUsers<T>(body: SearchRequestBody) {
+    return apiRequest<T>("/v1/search/users", { method: "POST", body, optionalAuth: true });
 }
 
 export function updateProfile<T>(body: UpdateProfileBody) {

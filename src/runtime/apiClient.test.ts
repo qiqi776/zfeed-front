@@ -8,6 +8,8 @@ import {
     favoriteContent,
     getApiBaseUrl,
     likeContent,
+    searchContents,
+    searchUsers,
     unlikeContent,
     unfavoriteContent
 } from "./apiClient";
@@ -98,6 +100,42 @@ describe("apiClient", () => {
             message: "请先登录后再操作"
         });
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("uses optional Bearer auth for search helpers when a session exists", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+            void input;
+            void init;
+            return jsonResponse({
+                items: [],
+                next_cursor: 0,
+                has_more: false,
+                next_page_token: "",
+                snapshot_id: ""
+            });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        await searchContents({ query: "AI 创作", page_size: 10, mode: "hybrid" });
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/search/contents", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "hybrid" })
+        }));
+        expect((fetchMock.mock.calls[0][1] as RequestInit).headers).not.toHaveProperty("Authorization");
+
+        saveAuthSession({
+            token: "search-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        await searchUsers({ query: "Mira", page_size: 10, mode: "relevance" });
+
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/v1/search/users", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer search-token"
+            }),
+            body: JSON.stringify({ query: "Mira", page_size: 10, mode: "relevance" })
+        }));
     });
 
     it("serializes interaction write helpers with documented backend field names", async () => {

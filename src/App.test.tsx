@@ -574,6 +574,75 @@ describe("App routes", () => {
         expect(window.location.search).toBe("?q=AI+%E5%88%9B%E4%BD%9C");
     });
 
+    it("loads content and user results from the search query", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/search/contents") {
+                return jsonResponse({
+                    items: [{
+                        content_id: 1001,
+                        content_type: 1,
+                        author_id: 1001,
+                        author_name: "Jax Lee",
+                        author_avatar: "https://example.com/jax.png",
+                        title: "AI 搜索结果 <script>alert(1)</script>",
+                        cover_url: "https://example.com/cover.png",
+                        published_at: 1765670400
+                    }],
+                    next_cursor: 0,
+                    has_more: false,
+                    next_page_token: "",
+                    snapshot_id: "content-snapshot"
+                });
+            }
+
+            if (input === "/v1/search/users") {
+                return jsonResponse({
+                    items: [{
+                        user_id: 1002,
+                        nickname: "Nora <admin>",
+                        avatar: "https://example.com/nora.png",
+                        bio: "研究 AI 工具",
+                        is_following: false
+                    }],
+                    next_cursor: 0,
+                    has_more: false,
+                    next_page_token: "",
+                    snapshot_id: "user-snapshot"
+                });
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/search?q=AI+%E5%88%9B%E4%BD%9C");
+
+        render(<App />);
+
+        expect(await screen.findByText("AI 搜索结果 <script>alert(1)</script>")).toBeInTheDocument();
+        expect(screen.getByText("Nora <admin>")).toBeInTheDocument();
+        expect(screen.queryByText("输入关键词开始搜索")).not.toBeInTheDocument();
+        expect(document.querySelector("script")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/search/contents", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "hybrid" })
+        }));
+        expect(fetchMock).toHaveBeenCalledWith("/v1/search/users", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "hybrid" })
+        }));
+    });
+
+    it("validates search query length before requesting results", async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", `/search?q=${"a".repeat(51)}`);
+
+        render(<App />);
+
+        expect(await screen.findByText("关键词最多 50 字")).toBeInTheDocument();
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("guides unauthenticated write actions to login without calling the API", async () => {
         const fetchMock = vi.fn();
         vi.stubGlobal("fetch", fetchMock);
