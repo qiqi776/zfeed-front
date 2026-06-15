@@ -46,6 +46,13 @@ describe("authStore", () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({ token: "missing-expiry" }));
         expect(readAuthSession()).toBeNull();
         expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "bad-expiry",
+            expiredAt: "not-a-number"
+        }));
+        expect(readAuthSession()).toBeNull();
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
     });
 
     it("clears saved sessions explicitly", () => {

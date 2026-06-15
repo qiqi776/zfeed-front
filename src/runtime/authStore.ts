@@ -20,7 +20,7 @@ export function readAuthSession(): AuthSession | null {
 
     try {
         const parsed = JSON.parse(rawSession) as Partial<AuthSession>;
-        if (!parsed.token || !parsed.expiredAt || isExpired(parsed.expiredAt)) {
+        if (!parsed.token || !isValidExpiry(parsed.expiredAt) || isExpired(parsed.expiredAt)) {
             clearAuthSession();
             return null;
         }
@@ -46,4 +46,8 @@ export function clearAuthSession() {
 
 function isExpired(expiredAt: number) {
     return expiredAt <= Math.floor(Date.now() / 1000);
+}
+
+function isValidExpiry(expiredAt: unknown): expiredAt is number {
+    return typeof expiredAt === "number" && Number.isFinite(expiredAt);
 }
