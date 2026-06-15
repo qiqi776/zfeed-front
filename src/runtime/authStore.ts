@@ -10,10 +10,10 @@ export type AuthSession = {
     user?: AuthUser;
 };
 
-const storageKey = "zfeed.auth.session";
+export const authSessionStorageKey = "zfeed.auth.session";
 
 export function readAuthSession(): AuthSession | null {
-    const rawSession = window.localStorage.getItem(storageKey);
+    const rawSession = window.localStorage.getItem(authSessionStorageKey);
     if (!rawSession) {
         return null;
     }
@@ -42,11 +42,11 @@ export function saveAuthSession(session: AuthSession) {
         throw new Error("Invalid auth session");
     }
 
-    window.localStorage.setItem(storageKey, JSON.stringify(session));
+    window.localStorage.setItem(authSessionStorageKey, JSON.stringify(session));
 }
 
 export function clearAuthSession() {
-    window.localStorage.removeItem(storageKey);
+    window.localStorage.removeItem(authSessionStorageKey);
 }
 
 function isExpired(expiredAt: number) {

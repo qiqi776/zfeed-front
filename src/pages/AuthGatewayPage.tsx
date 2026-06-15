@@ -1,21 +1,21 @@
 import { createElement, useEffect, useState } from "react";
 import { PageShell } from "../runtime/PageShell";
 import { getMe } from "../runtime/apiClient";
-import { clearAuthSession, readAuthSession, saveAuthSession } from "../runtime/authStore";
+import { authSessionStorageKey, clearAuthSession, readAuthSession, saveAuthSession } from "../runtime/authStore";
 import type { AuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
 import { AuthHomeBackdrop } from "./AuthHomeBackdrop";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 const restoreTimeoutMs = 5_000;
-
 export function AuthGatewayPage() {
+    const [hadStoredSession] = useState(() => window.localStorage.getItem(authSessionStorageKey) !== null);
     const [sessionToRestore] = useState<AuthSession | null>(() => readAuthSession());
     const isRestoring = sessionToRestore !== null;
 
     useEffect(() => {
         if (!sessionToRestore) {
-            navigateTo("/login");
+            navigateTo(hadStoredSession ? "/home" : "/login");
             return;
         }
 
@@ -69,7 +69,7 @@ export function AuthGatewayPage() {
             isActive = false;
             window.clearTimeout(restoreTimer);
         };
-    }, [sessionToRestore]);
+    }, [hadStoredSession, sessionToRestore]);
 
     return createElement(
         PageShell,

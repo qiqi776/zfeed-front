@@ -178,6 +178,23 @@ describe("App routes", () => {
         expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
     });
 
+    it("clears a locally expired root session and enters the guest home feed", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "locally-expired-token",
+            expiredAt: Math.floor(Date.now() / 1000) - 1
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse(recommendFeedPayload()));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/");
+
+        render(<App />);
+
+        await waitFor(() => expect(window.location.pathname).toBe("/home"));
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+        expect(fetchMock).not.toHaveBeenCalledWith("/v1/users/me", expect.any(Object));
+        expect(await screen.findByText("用 AI 构建产品：30 天从 0 到 1")).toBeInTheDocument();
+    });
+
     it("falls back to the guest home feed when session restore never resolves", async () => {
         vi.useFakeTimers();
         try {
