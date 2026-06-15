@@ -22,15 +22,14 @@ describe("App routes", () => {
         vi.unstubAllGlobals();
     });
 
-    it("renders the auth gateway at the root path", async () => {
+    it("redirects unauthenticated root visits to the login entry", async () => {
         window.history.pushState({}, "", "/");
 
         render(<App />);
 
-        expect(await screen.findByRole("heading", { name: "登录或注册 zfeed" })).toBeInTheDocument();
+        await waitFor(() => expect(window.location.pathname).toBe("/login"));
+        expect(await screen.findByRole("heading", { name: "登录 zfeed" })).toBeInTheDocument();
         expect(screen.getByTitle("zfeed 首页雾化背景")).toBeInTheDocument();
-        expect(screen.getByRole("link", { name: "登录" })).toHaveAttribute("href", "/login");
-        expect(screen.getByRole("link", { name: "注册" })).toHaveAttribute("href", "/register");
     });
 
     it("restores a valid session at the root path and enters the home feed", async () => {
@@ -198,6 +197,7 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByRole("heading", { name: "登录 zfeed" })).toBeInTheDocument();
+        expect(screen.getByTitle("zfeed 首页雾化背景")).toBeInTheDocument();
         expect(screen.getByLabelText("手机号")).toBeInTheDocument();
         expect(screen.getByLabelText("密码")).toBeInTheDocument();
         expect(screen.getByRole("link", { name: "去注册" })).toHaveAttribute("href", "/register");
@@ -323,6 +323,7 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByRole("heading", { name: "创建 zfeed 账号" })).toBeInTheDocument();
+        expect(screen.getByTitle("zfeed 首页雾化背景")).toBeInTheDocument();
         expect(screen.getByLabelText("手机号")).toBeInTheDocument();
         expect(screen.getByLabelText("昵称")).toBeInTheDocument();
         expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login");

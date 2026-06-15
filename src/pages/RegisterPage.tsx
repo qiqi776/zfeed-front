@@ -3,6 +3,7 @@ import { PageShell } from "../runtime/PageShell";
 import { register as registerRequest } from "../runtime/apiClient";
 import { saveAuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
+import { AuthHomeBackdrop } from "./AuthHomeBackdrop";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 type RegisterErrors = {
@@ -33,9 +34,10 @@ export function RegisterPage() {
             bodyClass: sharedGlassBodyClass,
             styles: sharedGlassStyles
         },
-        createElement("div", { className: "page-root" },
+        createElement("div", { className: "page-root auth-gateway-root" },
+            createElement(AuthHomeBackdrop),
             createElement("main", {
-                className: "min-h-screen px-4 py-4 md:px-6 md:py-8 flex items-end md:items-center justify-center"
+                className: "relative z-10 min-h-screen px-4 py-4 md:px-6 md:py-8 flex items-end md:items-center justify-center"
             },
                 createElement("section", {
                     className:
