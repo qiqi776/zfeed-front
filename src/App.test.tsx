@@ -1234,6 +1234,24 @@ describe("App routes", () => {
         expect(screen.queryByText("账号与安全")).not.toBeInTheDocument();
     });
 
+    it("logs out from settings by clearing the session and returning to login", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "settings-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        window.history.pushState({}, "", "/settings");
+
+        render(<App />);
+
+        expect(await screen.findByText("账号与安全")).toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", { name: "退出登录" }));
+
+        await waitFor(() => expect(window.location.pathname).toBe("/login"));
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+        expect(await screen.findByRole("heading", { name: "登录 zfeed" })).toBeInTheDocument();
+    });
+
     it("opens search from the global search box", async () => {
         vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(recommendFeedPayload())));
         window.history.pushState({}, "", "/home");
