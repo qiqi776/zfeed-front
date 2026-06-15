@@ -17,6 +17,8 @@ const routes = [
     ["/liquid-glass-feed", "推荐 Feed"]
 ] as const;
 
+const routeReadyTimeoutMs = 15_000;
+
 for (const [route, text] of routes) {
     test(`renders ${route}`, async ({ page }) => {
         if (route === "/following" || route === "/me") {
@@ -24,6 +26,7 @@ for (const [route, text] of routes) {
         }
         if (route === "/me") {
             await mockMeProfile(page);
+            await mockUserPublishedFeed(page);
         }
         if (route === "/user/jax") {
             await mockUserProfile(page);
@@ -37,7 +40,7 @@ for (const [route, text] of routes) {
         }
 
         await page.goto(route, { waitUntil: "domcontentloaded" });
-        await expect(page.getByText(text).first()).toBeVisible();
+        await expect(page.getByText(text).first()).toBeVisible({ timeout: routeReadyTimeoutMs });
         await expect(page.locator("body")).toHaveCSS("overflow-x", "hidden");
     });
 }

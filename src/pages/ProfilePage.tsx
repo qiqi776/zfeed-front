@@ -29,6 +29,7 @@ type MeProfileResponse = {
 };
 
 type MeProfile = {
+    userId: string;
     nickname: string;
     avatar?: string;
     bio: string;
@@ -1889,6 +1890,7 @@ export function ProfilePage() {
 
 function MeProfilePage({ variant }: { variant: PageVariant }) {
     const [state, setState] = useState<MeProfileState>(() => readAuthSession() ? { status: "loading" } : { status: "auth-required" });
+    const [publishedFeed, setPublishedFeed] = useState<UserPublishedFeedState>({ status: "loading" });
 
     useEffect(() => {
         if (!readAuthSession()) {
@@ -1899,9 +1901,32 @@ function MeProfilePage({ variant }: { variant: PageVariant }) {
 
         getMe<MeProfileResponse>()
             .then((response) => {
-                if (isCurrent) {
-                    setState({ status: "ready", profile: normalizeMeProfile(response) });
+                if (!isCurrent) {
+                    return;
                 }
+
+                const profile = normalizeMeProfile(response);
+                setState({ status: "ready", profile });
+
+                if (!profile.userId) {
+                    setPublishedFeed({ status: "error" });
+                    return;
+                }
+
+                getUserPublishedFeed<UserPublishedFeedResponse>({ user_id: profile.userId, cursor: "", page_size: 20 })
+                    .then((feedResponse) => {
+                        if (!isCurrent) {
+                            return;
+                        }
+
+                        const items = feedResponse.items ?? [];
+                        setPublishedFeed(items.length > 0 ? { status: "ready", items } : { status: "empty" });
+                    })
+                    .catch(() => {
+                        if (isCurrent) {
+                            setPublishedFeed({ status: "error" });
+                        }
+                    });
             })
             .catch(() => {
                 if (!isCurrent) {
@@ -1920,7 +1945,7 @@ function MeProfilePage({ variant }: { variant: PageVariant }) {
         return renderMeStatePage(state, variant);
     }
 
-    return renderMeReadyPage(state.profile, variant);
+    return renderMeReadyPage(state.profile, variant, publishedFeed);
 }
 
 function UserProfilePage({ routeUserId, variant }: { routeUserId: string; variant: PageVariant }) {
@@ -2175,7 +2200,7 @@ function renderMeStatePage(state: Exclude<MeProfileState, { status: "ready" }>, 
     );
 }
 
-function renderMeReadyPage(profile: MeProfile, variant: PageVariant) {
+function renderMeReadyPage(profile: MeProfile, variant: PageVariant, publishedFeed: UserPublishedFeedState) {
     return createElement(
         PageShell,
         { title: `zfeed - ${profile.nickname}`, htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
@@ -2214,20 +2239,42 @@ function renderMeReadyPage(profile: MeProfile, variant: PageVariant) {
                                 renderMeStats(profile)
                             )
                         ),
-                        createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
-                            createElement("div", { className: "flex items-center justify-between gap-4" },
-                                createElement("div", null,
-                                    createElement("h2", { className: "font-headline-md text-on-surface" }, "最近动态"),
-                                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "个人发布流会在后续接入 `/v1/feed/user/publish`。")
-                                ),
-                                createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/compose" }, "去发布")
-                            )
-                        )
+                        renderMePublishedFeed(publishedFeed)
                     ),
                     renderMeRightRail(profile)
                 )
             )
         )
+    );
+}
+
+function renderMePublishedFeed(state: UserPublishedFeedState) {
+    if (state.status !== "ready") {
+        return createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+            createElement("div", { className: "flex items-center justify-between gap-4" },
+                createElement("div", null,
+                    createElement("h2", { className: "font-headline-md text-on-surface" }, "最近动态"),
+                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "你的公开发布内容会显示在这里。")
+                ),
+                state.status === "empty"
+                    ? createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/compose" }, "去发布")
+                    : null
+            ),
+            createElement(PageState, getUserPublishedFeedStateView(state.status))
+        );
+    }
+
+    return createElement("section", { className: "flex flex-col gap-4" },
+        createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+            createElement("div", { className: "flex items-center justify-between gap-4" },
+                createElement("div", null,
+                    createElement("h2", { className: "font-headline-md text-on-surface" }, "最近动态"),
+                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "你的公开发布内容。")
+                ),
+                createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/compose" }, "去发布")
+            )
+        ),
+        ...state.items.map(renderUserPublishedCard)
     );
 }
 
@@ -2415,6 +2462,7 @@ function normalizeMeProfile(response: MeProfileResponse): MeProfile {
     const user = response.user_info ?? {};
     const nickname = cleanProfileText(user.nickname) || "zfeed 用户";
     return {
+        userId: cleanProfileText(user.user_id),
         nickname,
         avatar: cleanProfileText(user.avatar),
         bio: cleanProfileText(user.bio) || "这个用户还没有填写简介。",

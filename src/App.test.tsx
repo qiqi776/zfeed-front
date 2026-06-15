@@ -453,18 +453,28 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse(meProfilePayload({
-            user_info: {
-                nickname: "接口用户 <script>alert(1)</script>",
-                avatar: "https://example.com/me.png",
-                bio: "接口返回的个人简介"
-            },
-            followee_count: 3,
-            follower_count: 9,
-            like_received_count: 12,
-            favorite_received_count: 4,
-            content_count: 42
-        })));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return jsonResponse(meProfilePayload({
+                    user_info: {
+                        nickname: "接口用户 <script>alert(1)</script>",
+                        avatar: "https://example.com/me.png",
+                        bio: "接口返回的个人简介"
+                    },
+                    followee_count: 3,
+                    follower_count: 9,
+                    like_received_count: 12,
+                    favorite_received_count: 4,
+                    content_count: 42
+                }));
+            }
+
+            if (input === "/v1/feed/user/publish") {
+                return jsonResponse(userPublishedFeedPayload([]));
+            }
+
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/me");
 
@@ -483,6 +493,48 @@ describe("App routes", () => {
             })
         }));
         expect(screen.getByText("编辑资料")).toBeInTheDocument();
+    });
+
+    it("loads my published feed from the signed-in user id", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return jsonResponse(meProfilePayload());
+            }
+
+            if (input === "/v1/feed/user/publish") {
+                return jsonResponse(userPublishedFeedPayload([
+                    defaultRecommendFeedItem({
+                        content_id: 7701,
+                        author_id: 7,
+                        author_name: "Mira Chen",
+                        title: "我的真实发布内容",
+                        description: "这条内容来自我的发布流接口。"
+                    })
+                ]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/me");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "我的真实发布内容" })).toBeInTheDocument();
+        expect(screen.getByText("这条内容来自我的发布流接口。")).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/feed/user/publish", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer me-token"
+            }),
+            body: JSON.stringify({ user_id: "7", cursor: "", page_size: 20 })
+        }));
+        expect(screen.queryByText("个人发布流会在后续接入 `/v1/feed/user/publish`。")).not.toBeInTheDocument();
     });
 
     it("shows an auth-required state on me when signed out", async () => {
@@ -535,7 +587,17 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
-        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(meProfilePayload())));
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return jsonResponse(meProfilePayload());
+            }
+
+            if (input === "/v1/feed/user/publish") {
+                return jsonResponse(userPublishedFeedPayload([]));
+            }
+
+            return jsonResponse({});
+        }));
         window.history.pushState({}, "", "/me");
 
         render(<App />);
