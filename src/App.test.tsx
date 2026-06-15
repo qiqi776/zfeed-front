@@ -135,6 +135,11 @@ describe("App routes", () => {
     });
 
     it("renders the me route", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
         window.history.pushState({}, "", "/me");
 
         render(<App />);
@@ -145,7 +150,23 @@ describe("App routes", () => {
         expect(screen.getByText("编辑资料")).toBeInTheDocument();
     });
 
+    it("shows an auth-required state on me when signed out", async () => {
+        window.history.pushState({}, "", "/me");
+
+        render(<App />);
+
+        const authState = await screen.findByText("登录后才能查看我的主页。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
+        expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fme");
+        expect(screen.queryByText("编辑资料")).not.toBeInTheDocument();
+    });
+
     it("points the profile edit action at the modern edit profile route", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
         window.history.pushState({}, "", "/me");
 
         render(<App />);
@@ -914,6 +935,11 @@ describe("App routes", () => {
     });
 
     it("opens internal links inside the React app without a full page navigation", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
         window.history.pushState({}, "", "/home");
 
         render(<App />);

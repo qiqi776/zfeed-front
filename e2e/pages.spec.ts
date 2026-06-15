@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const routes = [
     ["/", "登录 zfeed"],
@@ -19,6 +19,10 @@ const routes = [
 
 for (const [route, text] of routes) {
     test(`renders ${route}`, async ({ page }) => {
+        if (route === "/me") {
+            await seedAuthSession(page);
+        }
+
         await page.goto(route, { waitUntil: "domcontentloaded" });
         await expect(page.getByText(text).first()).toBeVisible();
         await expect(page.locator("body")).toHaveCSS("overflow-x", "hidden");
@@ -44,13 +48,7 @@ test("captures stable desktop and mobile feed screenshots", async ({ page }, tes
 });
 
 test("keeps migrated edit profile form values visible", async ({ page }) => {
-    await page.addInitScript(() => {
-        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
-            token: "e2e-token",
-            expiredAt: Math.floor(Date.now() / 1000) + 3600,
-            user: { userId: 7 }
-        }));
-    });
+    await seedAuthSession(page);
     await page.goto("/me/edit", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByLabel("昵称")).toHaveValue("Mira Chen");
@@ -87,3 +85,20 @@ test("does not serve removed legacy product URLs", async ({ page }) => {
     await page.goto("/edit-profile?user=me", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("页面不存在")).toBeVisible();
 });
+
+test("requires auth for the me route", async ({ page }) => {
+    await page.goto("/me", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText("登录后才能查看我的主页。")).toBeVisible();
+    await expect(page.locator("[data-page-state='auth-required']")).toBeVisible();
+});
+
+async function seedAuthSession(page: Page) {
+    await page.addInitScript(() => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "e2e-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+    });
+}

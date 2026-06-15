@@ -1,6 +1,8 @@
 import { createElement } from "react";
 import type { ReactNode } from "react";
+import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
+import { PageState } from "./PageState";
 
 type PageVariant = {
     title: string;
@@ -1801,6 +1803,27 @@ const variants: Record<string, PageVariant> = {
 export function ProfilePage() {
     const profileKey = parseProfileKey(window.location.pathname, window.location.search);
     const variant = variants[profileKey] ?? variants["me"];
+
+    if (profileKey === "me" && !readAuthSession()) {
+        return createElement(
+            PageShell,
+            { title: "zfeed - 我的主页", htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
+            createElement("div", { className: "page-root" },
+                createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
+                    createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-3xl rounded-[28px] p-6 md:p-8" },
+                        createElement("a", { className: "text-label-sm text-primary", href: "/home" }, "返回首页"),
+                        createElement("h1", { className: "mt-5 font-display text-[34px] leading-tight text-on-surface" }, "我的主页"),
+                        createElement(PageState, {
+                            state: "auth-required",
+                            description: "登录后才能查看我的主页。",
+                            actionHref: `/login?next=${encodeURIComponent("/me")}`,
+                            actionLabel: "去登录"
+                        })
+                    )
+                )
+            )
+        );
+    }
 
     return createElement(
         PageShell,
