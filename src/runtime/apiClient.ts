@@ -238,19 +238,19 @@ export function getUserPublishedFeed<T>(body: UserPublishedFeedBody) {
 }
 
 export function getContentDetail<T>(body: ContentDetailBody) {
-    return apiRequest<T>("/v1/content/detail", { method: "POST", body, optionalAuth: true });
+    return apiRequest<T>("/v1/content/detail", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function getUserProfile<T>(userId: UserProfileId) {
-    return apiRequest<T>(`/v1/user/profile/${encodeURIComponent(String(userId))}`, { optionalAuth: true });
+    return apiRequest<T>(`/v1/user/profile/${encodeURIComponent(String(userId))}`, { optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function searchContents<T>(body: SearchRequestBody) {
-    return apiRequest<T>("/v1/search/contents", { method: "POST", body, optionalAuth: true });
+    return apiRequest<T>("/v1/search/contents", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function searchUsers<T>(body: SearchRequestBody) {
-    return apiRequest<T>("/v1/search/users", { method: "POST", body, optionalAuth: true });
+    return apiRequest<T>("/v1/search/users", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function updateProfile<T>(body: UpdateProfileBody) {

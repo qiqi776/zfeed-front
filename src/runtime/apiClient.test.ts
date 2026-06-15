@@ -174,6 +174,64 @@ describe("apiClient", () => {
         }));
     });
 
+    it("retries public optional reads as a guest when optional auth is rejected", async () => {
+        saveAuthSession({
+            token: "public-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+            if ((init?.headers as Record<string, string> | undefined)?.Authorization) {
+                return jsonResponse({ message: "raw auth failure" }, { status: 401 });
+            }
+
+            return jsonResponse({ ok: true });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(searchContents({ query: "AI", page_size: 10 })).resolves.toEqual({ ok: true });
+        await expect(getContentDetail({ content_id: "1001" })).resolves.toEqual({ ok: true });
+        await expect(getUserProfile("1001")).resolves.toEqual({ ok: true });
+
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledTimes(4);
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/search/contents", expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: "Bearer public-token"
+            })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/v1/search/contents", expect.objectContaining({
+            headers: expect.not.objectContaining({
+                Authorization: expect.any(String)
+            })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(3, "/v1/content/detail", expect.objectContaining({
+            headers: expect.not.objectContaining({
+                Authorization: expect.any(String)
+            })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(4, "/v1/user/profile/1001", expect.objectContaining({
+            headers: expect.not.objectContaining({
+                Authorization: expect.any(String)
+            })
+        }));
+    });
+
+    it("keeps follow feed auth failures as auth-required instead of retrying as a guest", async () => {
+        saveAuthSession({
+            token: "follow-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        const fetchMock = vi.fn(async () => jsonResponse({ message: "raw auth failure" }, { status: 403 }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(getFollowFeed({ cursor: "", page_size: 20 })).rejects.toMatchObject({
+            status: 403,
+            message: "登录状态已失效"
+        });
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
     it("serializes optional read helpers for feed and content detail", async () => {
         saveAuthSession({
             token: "reader-token",
