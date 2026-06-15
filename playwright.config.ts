@@ -19,12 +19,16 @@ export default defineConfig({
     },
     projects: [
         {
-            name: "chromium-desktop",
-            use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1100 } }
+            name: "chromium-375",
+            use: { ...devices["Pixel 5"], viewport: { width: 375, height: 812 } }
         },
         {
-            name: "chromium-mobile",
-            use: { ...devices["Pixel 5"], viewport: { width: 390, height: 844 } }
+            name: "chromium-768",
+            use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } }
+        },
+        {
+            name: "chromium-1440",
+            use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1100 } }
         }
     ]
 });

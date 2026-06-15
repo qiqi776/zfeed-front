@@ -142,6 +142,9 @@ function handleActionClick(event: MouseEvent) {
 
     const contentId = resolveContentId(button);
     if (!contentId) {
+        if (window.location.pathname === "/liquid-glass-feed") {
+            applyLegacyLocalActionState(button, action);
+        }
         return;
     }
     const contentUserId = resolveContentUserId(button);
@@ -880,6 +883,22 @@ function applyOptimisticState(button: HTMLElement, action: { kind: "like" | "fav
     const label = findActionLabel(button);
     if (label) {
         label.textContent = action.nextActive ? "已保存" : "收藏";
+    }
+}
+
+function applyLegacyLocalActionState(button: HTMLElement, action: { kind: "like" | "favorite"; nextActive: boolean }) {
+    if (action.kind === "like") {
+        button.classList.toggle("selected", action.nextActive);
+        return;
+    }
+
+    button.classList.toggle("bookmarked", action.nextActive);
+    const label = Array.from(button.querySelectorAll("span")).find((item) => {
+        const text = item.textContent?.trim();
+        return text === "收藏" || text === "已收藏" || text === "已保存";
+    });
+    if (label) {
+        label.textContent = action.nextActive ? "已收藏" : "收藏";
     }
 }
 

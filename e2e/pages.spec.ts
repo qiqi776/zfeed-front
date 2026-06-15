@@ -6,11 +6,14 @@ const routes = [
     ["/following", "我关注的创作者今天都在用 AI 重构工作流"],
     ["/login", "登录 zfeed"],
     ["/register", "创建 zfeed 账号"],
-    ["/profile?user=me", "Mira Chen"],
-    ["/profile?user=jax", "Jax Lee"],
-    ["/detail?type=article", "用 AI 构建产品：30 天从 0 到 1"],
-    ["/detail?type=video", "创作工具的未来：AI 成为协作副驾"],
-    ["/edit-profile?user=me", "编辑资料"],
+    ["/me", "Mira Chen"],
+    ["/user/jax", "Jax Lee"],
+    ["/content/article-1", "用 AI 构建产品：30 天从 0 到 1"],
+    ["/content/video-1", "创作工具的未来：AI 成为协作副驾"],
+    ["/me/edit", "编辑资料"],
+    ["/search", "搜索"],
+    ["/compose", "发布"],
+    ["/settings", "设置"],
     ["/liquid-glass-feed", "推荐 Feed"]
 ] as const;
 
@@ -33,7 +36,7 @@ test("captures stable desktop and mobile feed screenshots", async ({ page }, tes
 });
 
 test("keeps migrated edit profile form values visible", async ({ page }) => {
-    await page.goto("/edit-profile?user=me", { waitUntil: "domcontentloaded" });
+    await page.goto("/me/edit", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByLabel("昵称")).toHaveValue("Mira Chen");
     await expect(page.getByLabel("简介")).toContainText("关注创作者工具");
@@ -56,5 +59,16 @@ test("keeps liquid glass feed delegated interactions", async ({ page }) => {
 test("does not serve old .html URLs", async ({ page }) => {
     await page.goto("/following.html", { waitUntil: "domcontentloaded" });
 
+    await expect(page.getByText("页面不存在")).toBeVisible();
+});
+
+test("does not serve removed legacy product URLs", async ({ page }) => {
+    await page.goto("/profile?user=me", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("页面不存在")).toBeVisible();
+
+    await page.goto("/detail?type=article", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("页面不存在")).toBeVisible();
+
+    await page.goto("/edit-profile?user=me", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("页面不存在")).toBeVisible();
 });
