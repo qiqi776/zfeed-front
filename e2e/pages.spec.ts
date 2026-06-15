@@ -7,7 +7,7 @@ const routes = [
     ["/login", "登录 zfeed"],
     ["/register", "创建 zfeed 账号"],
     ["/me", "Mira Chen"],
-    ["/user/jax", "Jax Lee"],
+    ["/user/jax", "用户主页真实发布内容"],
     ["/content/article-1", "用 AI 构建产品：30 天从 0 到 1"],
     ["/content/video-1", "创作工具的未来：AI 成为协作副驾"],
     ["/me/edit", "编辑资料"],
@@ -27,6 +27,7 @@ for (const [route, text] of routes) {
         }
         if (route === "/user/jax") {
             await mockUserProfile(page);
+            await mockUserPublishedFeed(page);
         }
         if (route === "/home") {
             await mockRecommendFeed(page);
@@ -237,6 +238,34 @@ async function mockUserProfile(page: Page) {
                 favorite_received_count: 300,
                 content_count: 16,
                 is_following: false
+            })
+        });
+    });
+}
+
+async function mockUserPublishedFeed(page: Page) {
+    await page.route("**/v1/feed/user/publish", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                items: [{
+                    content_id: 9101,
+                    content_type: 1,
+                    author_id: 1001,
+                    author_name: "Jax Lee",
+                    author_avatar: "",
+                    title: "用户主页真实发布内容",
+                    description: "这条内容来自用户发布流接口。",
+                    cover_url: "",
+                    published_at: 1765670400,
+                    like_count: 9,
+                    favorite_count: 4,
+                    comment_count: 2,
+                    is_liked: false,
+                    is_favorited: false
+                }],
+                cursor: "",
+                has_more: false
             })
         });
     });

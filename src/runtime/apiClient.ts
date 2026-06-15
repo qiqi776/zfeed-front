@@ -74,6 +74,12 @@ type FollowFeedBody = {
     page_size: number;
 };
 
+type UserPublishedFeedBody = {
+    user_id: string;
+    cursor: string;
+    page_size: number;
+};
+
 type ContentDetailBody = {
     content_id: string;
 };
@@ -206,6 +212,10 @@ export function getRecommendFeed<T>(body: RecommendFeedBody) {
 
 export function getFollowFeed<T>(body: FollowFeedBody) {
     return apiRequest<T>("/v1/feed/follow", { method: "POST", body, optionalAuth: true });
+}
+
+export function getUserPublishedFeed<T>(body: UserPublishedFeedBody) {
+    return apiRequest<T>("/v1/feed/user/publish", { method: "POST", body, optionalAuth: true });
 }
 
 export function getContentDetail<T>(body: ContentDetailBody) {

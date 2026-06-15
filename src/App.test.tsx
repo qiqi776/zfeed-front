@@ -87,6 +87,23 @@ function userProfilePayload(overrides: Record<string, unknown> = {}) {
     };
 }
 
+function userPublishedFeedPayload(items: unknown[] = [defaultRecommendFeedItem({
+    content_id: 9101,
+    author_id: 1001,
+    author_name: "Jax Lee",
+    title: "用户主页真实发布内容",
+    description: "这条内容来自用户发布流接口。",
+    like_count: 9,
+    favorite_count: 4,
+    comment_count: 2
+})]) {
+    return {
+        items,
+        cursor: "",
+        has_more: false
+    };
+}
+
 describe("App routes", () => {
     beforeEach(() => {
         window.localStorage.clear();
@@ -530,6 +547,93 @@ describe("App routes", () => {
                 Authorization: "Bearer reader-token"
             })
         }));
+    });
+
+    it("loads a user published feed after the user profile", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "reader-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return jsonResponse(userProfilePayload());
+            }
+
+            return jsonResponse(userPublishedFeedPayload());
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "用户主页真实发布内容" })).toBeInTheDocument();
+        expect(screen.getByText("这条内容来自用户发布流接口。")).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/feed/user/publish", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            }),
+            body: JSON.stringify({ user_id: "1001", cursor: "", page_size: 20 })
+        }));
+    });
+
+    it("shows an empty state when a user has no published content", async () => {
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return jsonResponse(userProfilePayload());
+            }
+
+            return jsonResponse(userPublishedFeedPayload([]));
+        }));
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        expect(await screen.findByText("还没有公开发布内容")).toBeInTheDocument();
+    });
+
+    it("shows a contained error state when the user published feed fails", async () => {
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return jsonResponse(userProfilePayload());
+            }
+
+            return jsonResponse({ message: "raw feed failure" }, { status: 500 });
+        }));
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "Jax Lee" })).toBeInTheDocument();
+        const errorState = await screen.findByText("发布内容加载失败");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("raw feed failure")).not.toBeInTheDocument();
+    });
+
+    it("renders user published content as safe text", async () => {
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/jax") {
+                return jsonResponse(userProfilePayload());
+            }
+
+            return jsonResponse(userPublishedFeedPayload([
+                defaultRecommendFeedItem({
+                    content_id: 9102,
+                    author_id: 1001,
+                    author_name: "Jax Lee",
+                    title: "发布 <script>alert(1)</script>",
+                    description: "摘要 <img src=x onerror=alert(1)>"
+                })
+            ]));
+        }));
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "发布 <script>alert(1)</script>" })).toBeInTheDocument();
+        expect(screen.getByText("摘要 <img src=x onerror=alert(1)>")).toBeInTheDocument();
+        expect(document.querySelector("script")).toBeNull();
     });
 
     it("shows an error state when a user profile cannot be loaded", async () => {
@@ -1179,6 +1283,9 @@ describe("App routes", () => {
             if (input === "/v1/user/profile/jax") {
                 return Promise.resolve(jsonResponse(userProfilePayload()));
             }
+            if (input === "/v1/feed/user/publish") {
+                return Promise.resolve(jsonResponse(userPublishedFeedPayload()));
+            }
 
             return new Promise<Response>((resolve) => {
                 resolveFollow = resolve;
@@ -1193,7 +1300,7 @@ describe("App routes", () => {
         fireEvent.click(followButton);
 
         expect(await screen.findByRole("button", { name: "已关注" })).toBeDisabled();
-        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock).toHaveBeenCalledTimes(3);
 
         resolveFollow(jsonResponse({ is_followed: true }));
         await waitFor(() => expect(followButton).not.toBeDisabled());
