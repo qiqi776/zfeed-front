@@ -10,6 +10,39 @@ function jsonResponse(body: unknown, init?: ResponseInit) {
     });
 }
 
+function recommendFeedPayload(items: unknown[] = [defaultRecommendFeedItem()]) {
+    return {
+        items,
+        next_cursor: "",
+        has_more: false,
+        snapshot_id: "recommend-snapshot"
+    };
+}
+
+function defaultRecommendFeedItem(overrides: Record<string, unknown> = {}) {
+    return {
+        content_id: 1001,
+        content_type: 1,
+        author_id: 1001,
+        author_name: "Jax Lee",
+        author_avatar: "https://example.com/jax.png",
+        title: "用 AI 构建产品：30 天从 0 到 1",
+        description: "记录从 0 到 1 的完整过程，包括技术栈选择、产品思考和踩坑经验。",
+        cover_url: "https://example.com/cover.png",
+        published_at: 1765670400,
+        like_count: 128,
+        favorite_count: 36,
+        comment_count: 12,
+        is_liked: true,
+        is_favorited: false,
+        ...overrides
+    };
+}
+
+function isRecommendFeedRequest(input: RequestInfo | URL) {
+    return input === "/v1/feed/recommend";
+}
+
 describe("App routes", () => {
     beforeEach(() => {
         window.localStorage.clear();
@@ -118,12 +151,48 @@ describe("App routes", () => {
         }
     });
 
-    it("renders the home recommend feed from the modern home path", async () => {
+    it("loads the home recommend feed from the API without executing user content", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse(recommendFeedPayload([
+            defaultRecommendFeedItem({
+                author_name: "Jax <owner>",
+                title: "接口推荐内容 <script>alert(1)</script>",
+                description: "接口返回的推荐流摘要"
+            })
+        ])));
+        vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/home");
 
         render(<App />);
 
-        expect(await screen.findByText("用 AI 构建产品：30 天从 0 到 1")).toBeInTheDocument();
+        expect(await screen.findByText("接口推荐内容 <script>alert(1)</script>")).toBeInTheDocument();
+        expect(screen.getByText("Jax <owner>")).toBeInTheDocument();
+        expect(screen.getByText("接口返回的推荐流摘要")).toBeInTheDocument();
+        expect(document.querySelector("script")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/feed/recommend", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ cursor: "", page_size: 20 })
+        }));
+    });
+
+    it("shows an empty state when the home recommend feed has no items", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(recommendFeedPayload([]))));
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const emptyState = await screen.findByText("暂时没有内容");
+        expect(emptyState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "empty");
+    });
+
+    it("shows an error state when the home recommend feed cannot be loaded", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, { status: 500 })));
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const errorState = await screen.findByText("推荐流加载失败");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("用 AI 构建产品：30 天从 0 到 1")).not.toBeInTheDocument();
     });
 
     it("loads the signed-in following feed from the API", async () => {
@@ -650,6 +719,7 @@ describe("App routes", () => {
     });
 
     it("opens compose from the primary publish button", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(recommendFeedPayload())));
         window.history.pushState({}, "", "/home");
 
         render(<App />);
@@ -661,6 +731,7 @@ describe("App routes", () => {
     });
 
     it("opens compose from the home composer input instead of treating it as search", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(recommendFeedPayload())));
         window.history.pushState({}, "", "/home");
 
         render(<App />);
@@ -696,6 +767,7 @@ describe("App routes", () => {
     });
 
     it("opens search from the global search box", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(recommendFeedPayload())));
         window.history.pushState({}, "", "/home");
 
         render(<App />);
@@ -778,7 +850,13 @@ describe("App routes", () => {
     });
 
     it("guides unauthenticated write actions to login without calling the API", async () => {
-        const fetchMock = vi.fn();
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isRecommendFeedRequest(input)) {
+                return jsonResponse(recommendFeedPayload());
+            }
+
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/home");
 
@@ -789,7 +867,8 @@ describe("App routes", () => {
         fireEvent.click(likeButton!);
 
         await waitFor(() => expect(window.location.pathname).toBe("/login"));
-        expect(fetchMock).not.toHaveBeenCalled();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith("/v1/feed/recommend", expect.any(Object));
     });
 
     it("uses Bearer writes for liked content and rolls back when the API fails", async () => {
@@ -798,7 +877,13 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({ message: "raw failure" }, { status: 500 }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isRecommendFeedRequest(input)) {
+                return jsonResponse(recommendFeedPayload());
+            }
+
+            return jsonResponse({ message: "raw failure" }, { status: 500 });
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/home");
 
@@ -828,9 +913,15 @@ describe("App routes", () => {
             user: { userId: 7 }
         }));
         let resolveWrite!: (response: Response) => void;
-        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
-            resolveWrite = resolve;
-        }));
+        const fetchMock = vi.fn((input: RequestInfo | URL) => {
+            if (isRecommendFeedRequest(input)) {
+                return Promise.resolve(jsonResponse(recommendFeedPayload()));
+            }
+
+            return new Promise<Response>((resolve) => {
+                resolveWrite = resolve;
+            });
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/home");
 
@@ -841,7 +932,7 @@ describe("App routes", () => {
         fireEvent.click(likeButton!);
 
         expect(likeButton).toBeDisabled();
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
 
         resolveWrite(jsonResponse({}));
         await waitFor(() => expect(likeButton).not.toBeDisabled());
@@ -853,18 +944,22 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({ message: "raw favorite failure" }, { status: 500 }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isRecommendFeedRequest(input)) {
+                return jsonResponse(recommendFeedPayload());
+            }
+
+            return jsonResponse({ message: "raw favorite failure" }, { status: 500 });
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/home");
 
         render(<App />);
 
-        const favoriteButton = (await screen.findAllByRole("button"))
-            .find((button) => button.textContent?.includes("bookmark"));
-        expect(favoriteButton).not.toBeNull();
+        const favoriteButton = await screen.findByRole("button", { name: "收藏" });
         expect(favoriteButton).toHaveClass("text-on-surface-variant");
 
-        fireEvent.click(favoriteButton!);
+        fireEvent.click(favoriteButton);
 
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/favorite", expect.objectContaining({
             method: "POST",
@@ -1225,6 +1320,7 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(recommendFeedPayload())));
         window.history.pushState({}, "", "/home");
 
         render(<App />);

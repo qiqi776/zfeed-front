@@ -22,6 +22,9 @@ for (const [route, text] of routes) {
         if (route === "/following" || route === "/me") {
             await seedAuthSession(page);
         }
+        if (route === "/home") {
+            await mockRecommendFeed(page);
+        }
         if (route === "/following") {
             await mockFollowingFeed(page);
         }
@@ -41,6 +44,7 @@ test("uses the frosted home backdrop on auth entry pages", async ({ page }) => {
 });
 
 test("captures stable desktop and mobile feed screenshots", async ({ page }, testInfo) => {
+    await mockRecommendFeed(page);
     await page.goto("/home", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("用 AI 构建产品：30 天从 0 到 1").first()).toBeVisible();
 
@@ -144,6 +148,35 @@ async function mockFollowingFeed(page: Page) {
                 }],
                 next_cursor: "",
                 has_more: false
+            })
+        });
+    });
+}
+
+async function mockRecommendFeed(page: Page) {
+    await page.route("**/v1/feed/recommend", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                items: [{
+                    content_id: 1001,
+                    content_type: 1,
+                    author_id: 1001,
+                    author_name: "Jax Lee",
+                    author_avatar: "",
+                    title: "用 AI 构建产品：30 天从 0 到 1",
+                    description: "记录从 0 到 1 的完整过程，包括技术栈选择、产品思考和踩坑经验。",
+                    cover_url: "",
+                    published_at: 1765670400,
+                    like_count: 128,
+                    favorite_count: 36,
+                    comment_count: 12,
+                    is_liked: true,
+                    is_favorited: false
+                }],
+                next_cursor: "",
+                has_more: false,
+                snapshot_id: "recommend-snapshot"
             })
         });
     });
