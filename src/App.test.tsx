@@ -905,6 +905,27 @@ describe("App routes", () => {
         await waitFor(() => expect(window.location.pathname).toBe("/home"));
     });
 
+    it("ignores removed auth next paths after login", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({
+            user_id: 7,
+            token: "login-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600,
+            nickname: "Mira Chen",
+            avatar: "https://example.com/avatar.png"
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/login?next=%2Ffollowing.html");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "登录 zfeed" })).toBeInTheDocument();
+        fireEvent.change(screen.getByLabelText("手机号"), { target: { value: "13800138000" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "password123" } });
+        fireEvent.click(screen.getByRole("button", { name: "登录" }));
+
+        await waitFor(() => expect(window.location.pathname).toBe("/home"));
+    });
+
     it("shows a sanitized login error without storing a session", async () => {
         vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ message: "raw backend failure" }, { status: 401 })));
         window.history.pushState({}, "", "/login");
@@ -930,6 +951,24 @@ describe("App routes", () => {
         expect(screen.getByLabelText("手机号")).toBeInTheDocument();
         expect(screen.getByLabelText("昵称")).toBeInTheDocument();
         expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login");
+    });
+
+    it("keeps auth next when switching between login and register", async () => {
+        window.history.pushState({}, "", "/login?next=%2Fcompose");
+
+        const { unmount } = render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "登录 zfeed" })).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "注册" })).toHaveAttribute("href", "/register?next=%2Fcompose");
+        expect(screen.getByRole("link", { name: "去注册" })).toHaveAttribute("href", "/register?next=%2Fcompose");
+        unmount();
+
+        window.history.pushState({}, "", "/register?next=%2Fcompose");
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "创建 zfeed 账号" })).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "登录" })).toHaveAttribute("href", "/login?next=%2Fcompose");
+        expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fcompose");
     });
 
     it("validates register fields before submitting", async () => {
@@ -1006,6 +1045,26 @@ describe("App routes", () => {
             token: "register-token",
             user: { userId: 9, nickname: "New User" }
         });
+    });
+
+    it("returns to auth next after register", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({
+            user_id: 9,
+            token: "register-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/register?next=%2Fcompose");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "创建 zfeed 账号" })).toBeInTheDocument();
+        fireEvent.change(screen.getByLabelText("手机号"), { target: { value: "13900139000" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "password123" } });
+        fireEvent.change(screen.getByLabelText("昵称"), { target: { value: "New User" } });
+        fireEvent.click(screen.getByRole("button", { name: "注册" }));
+
+        await waitFor(() => expect(window.location.pathname).toBe("/compose"));
     });
 
     it("prevents duplicate register submissions while the request is pending", async () => {

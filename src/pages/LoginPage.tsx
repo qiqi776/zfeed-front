@@ -4,6 +4,7 @@ import { login as loginRequest } from "../runtime/apiClient";
 import { saveAuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
 import { AuthHomeBackdrop } from "./AuthHomeBackdrop";
+import { buildAuthSiblingHref, resolveSafeAuthNextPath } from "./authNavigation";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 type LoginErrors = {
@@ -52,7 +53,7 @@ export function LoginPage() {
                         createElement("a", {
                             className:
                                 "glass-button-ghost inline-flex min-h-11 items-center rounded-full px-4 py-2.5 text-primary font-label-sm",
-                            href: "/register"
+                            href: buildAuthSiblingHref("/register")
                         }, "注册")
                     ),
                     createElement("div", { className: "mt-6" },
@@ -118,7 +119,7 @@ export function LoginPage() {
                                         avatar: response.avatar
                                     }
                                 });
-                                navigateTo(resolveSafeNextPath());
+                                navigateTo(resolveSafeAuthNextPath("/home"));
                             } catch {
                                 setErrors({ form: "手机号或密码不正确" });
                             } finally {
@@ -146,7 +147,7 @@ export function LoginPage() {
                         createElement("a", {
                             className:
                                 "glass-button-ghost inline-flex min-h-11 items-center rounded-full px-4 py-2.5 text-primary font-label-sm",
-                            href: "/register"
+                            href: buildAuthSiblingHref("/register")
                         }, "去注册")
                     )
                 )
@@ -181,24 +182,6 @@ function renderField(
         }),
         error ? createElement("span", { className: "text-[12px] text-red-600" }, error) : null
     );
-}
-
-function resolveSafeNextPath() {
-    const next = new URLSearchParams(window.location.search).get("next");
-    if (!next || !next.startsWith("/") || next.startsWith("//")) {
-        return "/home";
-    }
-
-    try {
-        const url = new URL(next, window.location.origin);
-        if (url.origin !== window.location.origin || url.pathname === "/login" || url.pathname === "/register") {
-            return "/home";
-        }
-
-        return `${url.pathname}${url.search}${url.hash}`;
-    } catch {
-        return "/home";
-    }
 }
 
 function isValidMobile(value: string) {

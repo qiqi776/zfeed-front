@@ -4,6 +4,7 @@ import { register as registerRequest } from "../runtime/apiClient";
 import { saveAuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
 import { AuthHomeBackdrop } from "./AuthHomeBackdrop";
+import { buildAuthSiblingHref, resolveSafeAuthNextPath } from "./authNavigation";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 type RegisterErrors = {
@@ -60,7 +61,7 @@ export function RegisterPage() {
                         createElement("a", {
                             className:
                                 "glass-button-ghost inline-flex min-h-11 items-center rounded-full px-4 py-2.5 text-primary font-label-sm",
-                            href: "/login"
+                            href: buildAuthSiblingHref("/login")
                         }, "登录")
                     ),
                     createElement("div", { className: "mt-6" },
@@ -144,7 +145,7 @@ export function RegisterPage() {
                                         avatar: avatarUrl.trim() || undefined
                                     }
                                 });
-                                navigateTo("/me");
+                                navigateTo(resolveSafeAuthNextPath("/me"));
                             } catch {
                                 setErrors({ form: "注册失败，请检查信息后重试" });
                             } finally {
@@ -189,7 +190,7 @@ export function RegisterPage() {
                         createElement("a", {
                             className:
                                 "glass-button-ghost inline-flex min-h-11 w-full items-center justify-center rounded-full px-4 py-2.5 text-primary font-label-sm",
-                            href: "/login"
+                            href: buildAuthSiblingHref("/login")
                         }, "去登录")
                     )
                 )
