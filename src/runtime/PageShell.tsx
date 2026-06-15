@@ -573,7 +573,12 @@ function handleSearchSubmit(event: KeyboardEvent) {
         return;
     }
 
-    if (event.target.type !== "search" && !event.target.closest(".search-shell, .search-box, .composer-shell")) {
+    if (isHomeComposerInput(event.target)) {
+        navigateTo("/compose");
+        return;
+    }
+
+    if (event.target.type !== "search" && !event.target.closest(".search-shell, .search-box")) {
         return;
     }
 
@@ -584,6 +589,10 @@ function handleSearchSubmit(event: KeyboardEvent) {
     }
 
     navigateTo(`/search?${new URLSearchParams({ q: query }).toString()}`);
+}
+
+function isHomeComposerInput(input: HTMLInputElement) {
+    return Boolean(input.closest(".composer-shell") && input.placeholder.includes("分享"));
 }
 
 function resolveContentAction(button: HTMLElement) {

@@ -412,6 +412,19 @@ describe("App routes", () => {
         expect(await screen.findByRole("heading", { name: "发布" })).toBeInTheDocument();
     });
 
+    it("opens compose from the home composer input instead of treating it as search", async () => {
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const composer = await screen.findByPlaceholderText("分享你的想法、灵感或最新动态...");
+        fireEvent.change(composer, { target: { value: "准备发布一条动态" } });
+        fireEvent.keyDown(composer, { key: "Enter" });
+
+        await waitFor(() => expect(window.location.pathname).toBe("/compose"));
+        expect(window.location.search).toBe("");
+    });
+
     it("shows an auth-required state on compose with a next-aware login link", async () => {
         window.history.pushState({}, "", "/compose");
 
