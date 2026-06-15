@@ -195,8 +195,8 @@ function renderContentResult(item: SearchContentItem) {
             }) : null,
             createElement("div", { className: "min-w-0 flex-1" },
                 createElement("div", { className: "break-words font-headline-md text-[16px] leading-6 text-on-surface" }, item.title),
-                createElement("div", { className: "mt-2 flex flex-wrap items-center gap-2 text-[13px] text-on-surface-variant" },
-                    createElement("span", null, item.author_name || "未知作者"),
+                createElement("div", { className: "mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[13px] text-on-surface-variant" },
+                    createElement("span", { className: "min-w-0 break-words" }, item.author_name || "未知作者"),
                     createElement("span", null, "·"),
                     createElement("span", null, formatPublishedAt(item.published_at))
                 )

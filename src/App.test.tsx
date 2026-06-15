@@ -1324,6 +1324,48 @@ describe("App routes", () => {
         }));
     });
 
+    it("keeps long search result metadata from overflowing cards", async () => {
+        const longAuthorName = "VeryLongAuthorNameWithoutSpaces".repeat(4);
+        const longNickname = "VeryLongCreatorNicknameWithoutSpaces".repeat(4);
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/search/contents") {
+                return jsonResponse({
+                    items: [{
+                        content_id: 1001,
+                        content_type: 1,
+                        author_id: 1001,
+                        author_name: longAuthorName,
+                        author_avatar: "",
+                        title: "搜索结果标题",
+                        cover_url: "",
+                        published_at: 1765670400
+                    }]
+                });
+            }
+
+            if (input === "/v1/search/users") {
+                return jsonResponse({
+                    items: [{
+                        user_id: 1002,
+                        nickname: longNickname,
+                        avatar: "",
+                        bio: "研究 AI 工具",
+                        is_following: false
+                    }]
+                });
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/search?q=long");
+
+        render(<App />);
+
+        expect(await screen.findByText(longAuthorName)).toHaveClass("break-words");
+        expect(screen.getByText(longNickname)).toHaveClass("break-words");
+    });
+
     it("validates search query length before requesting results", async () => {
         const fetchMock = vi.fn();
         vi.stubGlobal("fetch", fetchMock);
