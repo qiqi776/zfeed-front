@@ -20,7 +20,7 @@ export function readAuthSession(): AuthSession | null {
 
     try {
         const parsed = JSON.parse(rawSession) as Partial<AuthSession>;
-        if (!isValidToken(parsed.token) || !isValidExpiry(parsed.expiredAt) || isExpired(parsed.expiredAt)) {
+        if (!isValidSession(parsed)) {
             clearAuthSession();
             return null;
         }
@@ -37,7 +37,7 @@ export function readAuthSession(): AuthSession | null {
 }
 
 export function saveAuthSession(session: AuthSession) {
-    if (!isValidToken(session.token) || !isValidExpiry(session.expiredAt) || isExpired(session.expiredAt)) {
+    if (!isValidSession(session)) {
         clearAuthSession();
         throw new Error("Invalid auth session");
     }
@@ -59,4 +59,31 @@ function isValidToken(token: unknown): token is string {
 
 function isValidExpiry(expiredAt: unknown): expiredAt is number {
     return typeof expiredAt === "number" && Number.isFinite(expiredAt);
+}
+
+function isValidSession(session: Partial<AuthSession>): session is AuthSession {
+    return Boolean(
+        isValidToken(session.token) &&
+        isValidExpiry(session.expiredAt) &&
+        !isExpired(session.expiredAt) &&
+        isValidOptionalUser(session.user)
+    );
+}
+
+function isValidOptionalUser(user: unknown): user is AuthUser | undefined {
+    if (user === undefined) {
+        return true;
+    }
+
+    if (!user || typeof user !== "object") {
+        return false;
+    }
+
+    const candidate = user as Partial<AuthUser>;
+    return (
+        typeof candidate.userId === "number" &&
+        Number.isFinite(candidate.userId) &&
+        (candidate.nickname === undefined || typeof candidate.nickname === "string") &&
+        (candidate.avatar === undefined || typeof candidate.avatar === "string")
+    );
 }
