@@ -535,6 +535,36 @@ describe("App routes", () => {
         await waitFor(() => expect(likeButton).not.toBeDisabled());
     });
 
+    it("uses Bearer writes for favorite content and rolls back when the API fails", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "favorite-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ message: "raw favorite failure" }, { status: 500 }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const favoriteButton = (await screen.findAllByRole("button"))
+            .find((button) => button.textContent?.includes("bookmark"));
+        expect(favoriteButton).not.toBeNull();
+        expect(favoriteButton).toHaveClass("text-on-surface-variant");
+
+        fireEvent.click(favoriteButton!);
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/favorite", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer favorite-token"
+            }),
+            body: JSON.stringify({ content_id: "1001", scene: "content" })
+        })));
+        await waitFor(() => expect(favoriteButton).toHaveClass("text-on-surface-variant"));
+        expect(screen.queryByText("raw favorite failure")).not.toBeInTheDocument();
+    });
+
     it("follows a profile author with Bearer auth and optimistic feedback", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "follow-token",
