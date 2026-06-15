@@ -87,7 +87,8 @@ export function AuthGatewayPage() {
             },
                 createElement("section", {
                     className:
-                        "auth-sheet feed-transition feed-ready w-full max-w-[460px] overflow-hidden rounded-t-[28px] rounded-b-none p-6 md:rounded-[28px] md:p-8"
+                        "auth-sheet feed-transition feed-ready w-full max-w-[460px] overflow-hidden rounded-t-[28px] rounded-b-none p-6 md:rounded-[28px] md:p-8",
+                    "data-page-state": "loading"
                 },
                     createElement("div", { className: "flex items-center gap-3" },
                         createElement("div", {

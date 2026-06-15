@@ -61,7 +61,7 @@ export function App() {
 }
 
 function RouteLoading() {
-    return <div className="min-h-screen bg-[#eef2f6] px-6 py-8 text-[14px] text-slate-500">正在加载...</div>;
+    return <div className="min-h-screen bg-[#eef2f6] px-6 py-8 text-[14px] text-slate-500" data-page-state="loading">正在加载...</div>;
 }
 
 function findClosestLink(target: EventTarget | null) {

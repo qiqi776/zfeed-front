@@ -5,7 +5,8 @@ export function NotFoundPage() {
         "main",
         {
             className:
-                "min-h-screen flex items-center justify-center text-on-surface font-body-md antialiased overflow-x-hidden px-6"
+                "min-h-screen flex items-center justify-center text-on-surface font-body-md antialiased overflow-x-hidden px-6",
+            "data-page-state": "error"
         },
         createElement("div", { className: "text-center" },
             createElement("h1", { className: "font-display text-[40px] leading-tight text-on-surface" }, "页面不存在"),

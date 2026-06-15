@@ -96,10 +96,16 @@ describe("App routes", () => {
 
             render(<App />);
 
+            const routeLoading = screen.queryByText("正在加载...");
+            if (routeLoading) {
+                expect(routeLoading).toHaveAttribute("data-page-state", "loading");
+            }
+
             await act(async () => {
-                await Promise.resolve();
+                await vi.dynamicImportSettled();
             });
-            expect(screen.getByRole("heading", { name: "正在恢复 zfeed 会话" })).toBeInTheDocument();
+            const restoreState = screen.getByRole("heading", { name: "正在恢复 zfeed 会话" });
+            expect(restoreState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "loading");
 
             await act(async () => {
                 vi.advanceTimersByTime(5_000);
@@ -907,6 +913,7 @@ describe("App routes", () => {
 
         render(<App />);
 
-        expect(await screen.findByText("页面不存在")).toBeInTheDocument();
+        const errorState = await screen.findByText("页面不存在");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
     });
 });
