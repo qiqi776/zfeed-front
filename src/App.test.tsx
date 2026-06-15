@@ -126,17 +126,101 @@ describe("App routes", () => {
         expect(await screen.findByText("用 AI 构建产品：30 天从 0 到 1")).toBeInTheDocument();
     });
 
-    it("renders the following feed from the modern following path", async () => {
+    it("loads the signed-in following feed from the API", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "following-token",
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
+        const fetchMock = vi.fn(async () => jsonResponse({
+            items: [{
+                content_id: 1001,
+                content_type: 1,
+                author_id: 1002,
+                author_name: "关注作者 <safe>",
+                author_avatar: "https://example.com/author.png",
+                title: "接口关注内容 <script>alert(1)</script>",
+                description: "来自关注作者的新内容",
+                cover_url: "https://example.com/follow-cover.png",
+                published_at: 1765670400,
+                like_count: 6,
+                favorite_count: 2,
+                comment_count: 1,
+                is_liked: false,
+                is_favorited: false
+            }],
+            next_cursor: "",
+            has_more: false,
+            snapshot_id: "follow-snapshot"
+        }));
+        vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/following");
 
         render(<App />);
 
-        expect(await screen.findByText("我关注的创作者今天都在用 AI 重构工作流")).toBeInTheDocument();
+        expect(await screen.findByText("接口关注内容 <script>alert(1)</script>")).toBeInTheDocument();
+        expect(screen.getByText("关注作者 <safe>")).toBeInTheDocument();
+        expect(screen.getByText("来自关注作者的新内容")).toBeInTheDocument();
+        expect(document.querySelector("script")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/feed/follow", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer following-token"
+            }),
+            body: JSON.stringify({ cursor: "", page_size: 20 })
+        }));
+    });
+
+    it("shows an empty state when the following feed has no items", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "following-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({
+            items: [],
+            next_cursor: "",
+            has_more: false
+        })));
+        window.history.pushState({}, "", "/following");
+
+        render(<App />);
+
+        const emptyState = await screen.findByText("关注一些作者后，这里会出现他们的新内容");
+        expect(emptyState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "empty");
+        expect(screen.getByRole("link", { name: "去搜索" })).toHaveAttribute("href", "/search");
+    });
+
+    it("shows an error state when the following feed cannot be loaded", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "following-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, { status: 500 })));
+        window.history.pushState({}, "", "/following");
+
+        render(<App />);
+
+        const errorState = await screen.findByText("关注流加载失败");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("我关注的创作者今天都在用 AI 重构工作流")).not.toBeInTheDocument();
+    });
+
+    it("returns the following feed to auth-required when the token is rejected", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "following-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, { status: 401 })));
+        window.history.pushState({}, "", "/following");
+
+        render(<App />);
+
+        const authState = await screen.findByText("登录后才能查看关注流。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
     });
 
     it("shows an auth-required state on following when signed out", async () => {

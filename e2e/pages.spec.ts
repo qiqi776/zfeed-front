@@ -22,6 +22,9 @@ for (const [route, text] of routes) {
         if (route === "/following" || route === "/me") {
             await seedAuthSession(page);
         }
+        if (route === "/following") {
+            await mockFollowingFeed(page);
+        }
 
         await page.goto(route, { waitUntil: "domcontentloaded" });
         await expect(page.getByText(text).first()).toBeVisible();
@@ -115,5 +118,33 @@ async function seedAuthSession(page: Page) {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
+    });
+}
+
+async function mockFollowingFeed(page: Page) {
+    await page.route("**/v1/feed/follow", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                items: [{
+                    content_id: 1001,
+                    content_type: 1,
+                    author_id: 1002,
+                    author_name: "Mira Chen",
+                    author_avatar: "",
+                    title: "我关注的创作者今天都在用 AI 重构工作流",
+                    description: "接口返回的关注流内容。",
+                    cover_url: "",
+                    published_at: 1765670400,
+                    like_count: 12,
+                    favorite_count: 4,
+                    comment_count: 2,
+                    is_liked: false,
+                    is_favorited: false
+                }],
+                next_cursor: "",
+                has_more: false
+            })
+        });
     });
 }
