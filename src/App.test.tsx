@@ -43,6 +43,29 @@ function isRecommendFeedRequest(input: RequestInfo | URL) {
     return input === "/v1/feed/recommend";
 }
 
+function meProfilePayload(overrides: Record<string, unknown> = {}) {
+    return {
+        user_info: {
+            user_id: 7,
+            mobile: "13800138000",
+            nickname: "Mira Chen",
+            avatar: "https://example.com/avatar.png",
+            bio: "关注创作者工具、液态玻璃界面和高质量信息流体验。",
+            gender: 0,
+            status: 1,
+            email: "mira@example.com",
+            birthday: 0,
+            ...(overrides.user_info as Record<string, unknown> | undefined)
+        },
+        followee_count: 346,
+        follower_count: 18600,
+        like_received_count: 9200,
+        favorite_received_count: 912,
+        content_count: 128,
+        ...overrides
+    };
+}
+
 describe("App routes", () => {
     beforeEach(() => {
         window.localStorage.clear();
@@ -303,19 +326,41 @@ describe("App routes", () => {
         expect(screen.queryByText("我关注的创作者今天都在用 AI 重构工作流")).not.toBeInTheDocument();
     });
 
-    it("renders the me route", async () => {
+    it("loads the me profile from the API without executing user content", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "me-token",
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
+        const fetchMock = vi.fn(async () => jsonResponse(meProfilePayload({
+            user_info: {
+                nickname: "接口用户 <script>alert(1)</script>",
+                avatar: "https://example.com/me.png",
+                bio: "接口返回的个人简介"
+            },
+            followee_count: 3,
+            follower_count: 9,
+            like_received_count: 12,
+            favorite_received_count: 4,
+            content_count: 42
+        })));
+        vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/me");
 
         render(<App />);
 
-        await waitFor(() => {
-            expect(document.title).toBe("zfeed - Mira Chen");
-        });
+        expect(await screen.findByRole("heading", { name: "接口用户 <script>alert(1)</script>" })).toBeInTheDocument();
+        expect(screen.getByText("接口返回的个人简介")).toBeInTheDocument();
+        expect(screen.getAllByText("42").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("3").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("9").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("12").length).toBeGreaterThan(0);
+        expect(document.querySelector("script")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/users/me", expect.objectContaining({
+            headers: expect.objectContaining({
+                Authorization: "Bearer me-token"
+            })
+        }));
         expect(screen.getByText("编辑资料")).toBeInTheDocument();
     });
 
@@ -330,12 +375,46 @@ describe("App routes", () => {
         expect(screen.queryByText("编辑资料")).not.toBeInTheDocument();
     });
 
+    it("shows an error state when the me profile cannot be loaded", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ message: "raw user failure" }, { status: 500 })));
+        window.history.pushState({}, "", "/me");
+
+        render(<App />);
+
+        const errorState = await screen.findByText("我的主页加载失败");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("raw user failure")).not.toBeInTheDocument();
+        expect(screen.queryByText("Mira Chen")).not.toBeInTheDocument();
+    });
+
+    it("returns the me profile to auth-required when the token is rejected", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, { status: 401 })));
+        window.history.pushState({}, "", "/me");
+
+        render(<App />);
+
+        const authState = await screen.findByText("登录后才能查看我的主页。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+    });
+
     it("points the profile edit action at the modern edit profile route", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "me-token",
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(meProfilePayload())));
         window.history.pushState({}, "", "/me");
 
         render(<App />);

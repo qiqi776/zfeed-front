@@ -22,6 +22,9 @@ for (const [route, text] of routes) {
         if (route === "/following" || route === "/me") {
             await seedAuthSession(page);
         }
+        if (route === "/me") {
+            await mockMeProfile(page);
+        }
         if (route === "/home") {
             await mockRecommendFeed(page);
         }
@@ -177,6 +180,32 @@ async function mockRecommendFeed(page: Page) {
                 next_cursor: "",
                 has_more: false,
                 snapshot_id: "recommend-snapshot"
+            })
+        });
+    });
+}
+
+async function mockMeProfile(page: Page) {
+    await page.route("**/v1/users/me", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                user_info: {
+                    user_id: 7,
+                    mobile: "13800138000",
+                    nickname: "Mira Chen",
+                    avatar: "",
+                    bio: "关注创作者工具、液态玻璃界面和高质量信息流体验。",
+                    gender: 0,
+                    status: 1,
+                    email: "mira@example.com",
+                    birthday: 0
+                },
+                followee_count: 346,
+                follower_count: 18600,
+                like_received_count: 9200,
+                favorite_received_count: 912,
+                content_count: 128
             })
         });
     });

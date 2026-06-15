@@ -1,5 +1,6 @@
-import { createElement } from "react";
+import { createElement, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { getMe } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
 import { PageState } from "./PageState";
@@ -10,6 +11,40 @@ type PageVariant = {
     bodyClass: string;
     children: ReactNode;
 };
+
+type MeProfileResponse = {
+    user_info?: {
+        user_id?: number | string;
+        nickname?: string;
+        avatar?: string;
+        bio?: string;
+        mobile?: string;
+        email?: string;
+    };
+    followee_count?: number;
+    follower_count?: number;
+    like_received_count?: number;
+    favorite_received_count?: number;
+    content_count?: number;
+};
+
+type MeProfile = {
+    nickname: string;
+    avatar?: string;
+    bio: string;
+    handle: string;
+    contentCount: number;
+    followeeCount: number;
+    followerCount: number;
+    likeReceivedCount: number;
+    favoriteReceivedCount: number;
+};
+
+type MeProfileState =
+    | { status: "auth-required" }
+    | { status: "loading" }
+    | { status: "ready"; profile: MeProfile }
+    | { status: "error" };
 
 const styles = "/* Liquid Glass Utility Classes */\r\n        .glass-panel {\r\n            background: rgba(255, 255, 255, 0.4);\r\n            backdrop-filter: blur(40px);\r\n            -webkit-backdrop-filter: blur(40px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            border-top: 1px solid rgba(255, 255, 255, 0.8); /* Specular highlight */\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), \r\n                        0 4px 20px rgba(0, 0, 0, 0.05);\r\n        }\r\n        \r\n        .glass-input {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            backdrop-filter: blur(20px);\r\n            border: 1px solid rgba(255, 255, 255, 0.7);\r\n            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-input:focus {\n            outline: none;\n            border-color: var(--color-primary, #1f53c9);\n            box-shadow: 0 0 0 2px rgba(31, 83, 201, 0.2), inset 0 1px 3px rgba(0,0,0,0.02);\n        }\n\n        .search-shell {\n            border-radius: 9999px;\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease-out;\n        }\n\n        .search-shell:hover,\n        .search-shell:focus-within {\n            transform: translateY(-2px);\n            filter: drop-shadow(0 10px 22px rgba(31, 83, 201, 0.14));\n        }\n\n        .search-shell .glass-input {\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75), 0 4px 16px rgba(0, 0, 0, 0.04);\n        }\n\n        .search-shell:hover .glass-input {\n            background: rgba(255, 255, 255, 0.62);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .search-shell:focus-within .glass-input {\n            background: rgba(255, 255, 255, 0.72);\n            border-color: rgba(31, 83, 201, 0.55);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 10px 28px rgba(31, 83, 201, 0.16);\n        }\n\n        .search-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .search-shell:hover::after,\n        .search-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell {\n            position: relative;\n            flex: 1;\n            overflow: hidden;\n            border-radius: 1.25rem;\n            background: rgba(255, 255, 255, 0.34);\n            backdrop-filter: blur(18px);\n            -webkit-backdrop-filter: blur(18px);\n            border: 1px solid rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.72), 0 4px 16px rgba(0, 0, 0, 0.035);\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;\n        }\n\n        .composer-shell:hover,\n        .composer-shell:focus-within {\n            transform: translateY(-2px);\n            background: rgba(255, 255, 255, 0.58);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 10px 28px rgba(31, 83, 201, 0.12);\n        }\n\n        .composer-shell:focus-within {\n            border-color: rgba(31, 83, 201, 0.50);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 12px 30px rgba(31, 83, 201, 0.16);\n        }\n\n        .composer-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .composer-shell:hover::after,\n        .composer-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell input {\n            position: relative;\n            z-index: 20;\n            min-height: 44px;\n            padding: 0.65rem 0.95rem;\n        }\n\n        .composer-shell input:focus {\n            outline: none;\n            box-shadow: none;\n        }\n\n        .top-channel {\n            position: relative;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            overflow: hidden;\n            min-height: 34px;\n            padding: 0 12px;\n            border-radius: 9999px;\n            color: var(--color-on-surface-variant, #434654);\n            font-weight: 600;\n            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease-out, background 0.25s ease-out, box-shadow 0.25s ease-out;\n        }\n\n        .top-channel::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n        }\n\n        .top-channel:hover {\n            transform: translateY(-2px);\n            color: var(--color-primary, #1f53c9);\n            background: rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel.active {\n            color: var(--color-primary, #1f53c9);\n            background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(236, 244, 255, 0.62));\n            backdrop-filter: blur(20px) saturate(1.25);\n            -webkit-backdrop-filter: blur(20px) saturate(1.25);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(31, 83, 201, 0.12), 0 10px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel:hover::after,\n        .top-channel.active::after {\n            left: 160%;\n        }\n\n        .top-channel:active {\n            transform: translateY(-1px) scale(0.97);\n        }\n\n        .top-icon-btn {\n            width: 40px;\n            height: 40px;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            transform: translateY(2px);\n            background: rgba(255, 255, 255, 0.16);\n            border: 1px solid rgba(255, 255, 255, 0.22);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.45);\n        }\n\n        .top-icon-btn:hover {\n            transform: translateY(0);\n            background: rgba(255, 255, 255, 0.42);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.70), 0 8px 18px rgba(31, 83, 201, 0.10);\n        }\n\n        .glass-button-primary {\n            background: linear-gradient(135deg, rgba(64, 109, 228, 0.9) 0%, rgba(31, 83, 201, 0.9) 100%);\r\n            backdrop-filter: blur(10px);\r\n            box-shadow: 0 4px 15px rgba(31, 83, 201, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);\r\n            border: 1px solid rgba(255, 255, 255, 0.2);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-button-primary:hover {\r\n            transform: translateY(-1px);\r\n            box-shadow: 0 6px 20px rgba(31, 83, 201, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);\r\n        }\r\n\r\n        .glass-button-ghost {\r\n            background: rgba(255, 255, 255, 0.3);\r\n            backdrop-filter: blur(10px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n\r\n        .glass-button-ghost:hover {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            border-color: rgba(255, 255, 255, 0.8);\r\n        }\r\n\r\n        /* Hover Lift and Shine Effects */\r\n        .hover-lift {\r\n            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\r\n        }\r\n        .hover-lift:hover {\r\n            transform: translateY(-4px);\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 12px 30px rgba(0, 0, 0, 0.08);\r\n            border-color: rgba(255, 255, 255, 0.9);\r\n        }\r\n\r\n        .shine-effect {\r\n            position: relative;\r\n            overflow: hidden;\r\n        }\r\n        .shine-effect::after {\r\n            content: '';\r\n            position: absolute;\r\n            top: 0;\r\n            left: -150%;\r\n            width: 50%;\r\n            height: 100%;\r\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);\r\n            transform: skewX(-25deg);\r\n            transition: left 0.7s ease;\r\n            z-index: 10;\r\n            pointer-events: none;\r\n        }\r\n        .shine-effect:hover::after {\r\n            left: 200%;\r\n        }\r\n\r\n        /* Ambient Background */\r\n        body {\n            background-color: #eef2f6;\n            background-image: \n                radial-gradient(circle at 15% 50%, rgba(180, 197, 255, 0.4) 0%, transparent 50%),\n                radial-gradient(circle at 85% 30%, rgba(219, 226, 250, 0.5) 0%, transparent 50%);\n            background-attachment: fixed;\n            min-height: 100vh;\n        }\n\n        .feed-transition {\n            opacity: 0;\n            transform: translateY(8px) scale(0.995);\n            filter: blur(8px);\n            transition:\n                opacity 0.28s ease,\n                transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),\n                filter 0.34s ease;\n        }\n\n        .feed-transition.feed-ready {\n            opacity: 1;\n            transform: none;\n            filter: none;\n        }\n\n        .feed-transition.feed-leaving {\n            opacity: 0;\n            transform: translateY(6px) scale(0.996);\n            filter: blur(7px);\n            pointer-events: none;\n        }\n\n        @media (prefers-reduced-motion: reduce) {\n            .feed-transition,\n            .feed-transition.feed-ready,\n            .feed-transition.feed-leaving {\n                opacity: 1;\n                transform: none;\n                filter: none;\n                transition: none;\n            }\n        }\n\n        .chart-glow-line {\n            filter: drop-shadow(0 4px 6px rgba(31, 83, 201, 0.2));\n        }\n\r\n        .nav-link-hover {\r\n            transition: all 0.2s ease-out;\r\n        }\r\n        .nav-link-hover:hover {\n            background: rgba(255, 255, 255, 0.4);\n            border-radius: 0.75rem;\n        }\n\n        .profile-tab {\n            position: relative;\n            border: 1px solid transparent;\n            background: transparent;\n            color: rgba(67, 70, 84, 0.92);\n            font-weight: 700;\n            transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;\n        }\n\n        .profile-tab::after {\n            content: \"\";\n            position: absolute;\n            left: 1rem;\n            right: 1rem;\n            bottom: 0;\n            height: 2px;\n            border-radius: 999px;\n            background: transparent;\n            transition: all 0.28s ease;\n        }\n\n        .profile-tab.active,\n        .profile-tab:hover {\n            color: var(--color-primary, #1f53c9);\n            background: rgba(255, 255, 255, 0.54);\n            border: 1px solid rgba(255, 255, 255, 0.38);\n            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28);\n            transform: none;\n        }\n\n        .profile-tab.active::after,\n        .profile-tab:hover::after {\n            background: transparent;\n        }\n\n        .profile-stat-line {\n            color: rgba(67, 70, 84, 0.92);\n        }\n\n        .profile-stat-line strong {\n            color: #191c1e;\n            font-family: \"Hanken Grotesk\", sans-serif;\n            font-size: 17px;\n            font-weight: 700;\n        }";
 
@@ -1805,6 +1840,10 @@ export function ProfilePage() {
     const fallbackVariant = variants["me"];
     const variant = variants[profileKey];
 
+    if (profileKey === "me") {
+        return createElement(MeProfilePage, { variant: fallbackVariant });
+    }
+
     if (!variant) {
         return createElement(
             PageShell,
@@ -1826,32 +1865,284 @@ export function ProfilePage() {
         );
     }
 
-    if (profileKey === "me" && !readAuthSession()) {
-        return createElement(
-            PageShell,
-            { title: "zfeed - 我的主页", htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
-            createElement("div", { className: "page-root" },
-                createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
-                    createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-3xl rounded-[28px] p-6 md:p-8" },
-                        createElement("a", { className: "text-label-sm text-primary", href: "/home" }, "返回首页"),
-                        createElement("h1", { className: "mt-5 font-display text-[34px] leading-tight text-on-surface" }, "我的主页"),
-                        createElement(PageState, {
-                            state: "auth-required",
-                            description: "登录后才能查看我的主页。",
-                            actionHref: `/login?next=${encodeURIComponent("/me")}`,
-                            actionLabel: "去登录"
-                        })
-                    )
-                )
-            )
-        );
-    }
-
     return createElement(
         PageShell,
         { title: variant.title, htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
         variant.children
     );
+}
+
+function MeProfilePage({ variant }: { variant: PageVariant }) {
+    const [state, setState] = useState<MeProfileState>(() => readAuthSession() ? { status: "loading" } : { status: "auth-required" });
+
+    useEffect(() => {
+        if (!readAuthSession()) {
+            return;
+        }
+
+        let isCurrent = true;
+
+        getMe<MeProfileResponse>()
+            .then((response) => {
+                if (isCurrent) {
+                    setState({ status: "ready", profile: normalizeMeProfile(response) });
+                }
+            })
+            .catch(() => {
+                if (!isCurrent) {
+                    return;
+                }
+
+                setState(readAuthSession() ? { status: "error" } : { status: "auth-required" });
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, []);
+
+    if (state.status !== "ready") {
+        return renderMeStatePage(state, variant);
+    }
+
+    return renderMeReadyPage(state.profile, variant);
+}
+
+function renderMeStatePage(state: Exclude<MeProfileState, { status: "ready" }>, variant: PageVariant) {
+    return createElement(
+        PageShell,
+        { title: "zfeed - 我的主页", htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
+        createElement("div", { className: "page-root" },
+            createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
+                createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-3xl rounded-[28px] p-6 md:p-8" },
+                    createElement("a", { className: "text-label-sm text-primary", href: "/home" }, "返回首页"),
+                    createElement("h1", { className: "mt-5 font-display text-[34px] leading-tight text-on-surface" }, "我的主页"),
+                    createElement(PageState, getMeStateView(state.status))
+                )
+            )
+        )
+    );
+}
+
+function renderMeReadyPage(profile: MeProfile, variant: PageVariant) {
+    return createElement(
+        PageShell,
+        { title: `zfeed - ${profile.nickname}`, htmlClass: variant.htmlClass, bodyClass: variant.bodyClass, styles },
+        createElement("div", { className: "page-root" },
+            renderMeHeader(profile),
+            createElement("div", { className: "pt-24 px-4 md:px-6 max-w-[1600px] mx-auto pb-safe" },
+                createElement("div", { className: "grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-5" },
+                    renderMeLeftRail(),
+                    createElement("main", { className: "feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-4 pb-24 feed-ready" },
+                        createElement("section", { className: "overflow-hidden" },
+                            createElement("div", { className: "px-0 pb-2" },
+                                createElement("div", { className: "relative z-20 flex flex-col md:flex-row md:items-end justify-between gap-5" },
+                                    createElement("div", { className: "flex min-w-0 items-end gap-4" },
+                                        renderMeAvatar(profile, "w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover shrink-0"),
+                                        createElement("div", { className: "min-w-0 pb-1" },
+                                            createElement("div", { className: "flex min-w-0 items-center gap-2" },
+                                                createElement("h1", { className: "break-words font-display text-[34px] leading-tight text-on-surface" }, profile.nickname),
+                                                createElement("span", { className: "material-symbols-outlined text-primary text-[20px]", style: { fontVariationSettings: "'FILL' 1" } }, "verified")
+                                            ),
+                                            createElement("div", { className: "flex flex-wrap items-center gap-3 text-on-surface-variant mt-1" },
+                                                createElement("span", { className: "font-label-sm" }, profile.handle),
+                                                createElement("span", { className: "w-1 h-1 rounded-full bg-outline-variant" }),
+                                                createElement("span", { className: "font-label-sm" }, "当前登录用户")
+                                            )
+                                        )
+                                    ),
+                                    createElement("div", { className: "flex flex-wrap gap-2 md:mb-2 self-start md:self-auto" },
+                                        createElement("button", { className: "glass-button-primary text-white font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300 flex items-center gap-2", type: "button" },
+                                            createElement("span", { className: "material-symbols-outlined text-[18px]" }, "add"),
+                                            "发布"
+                                        ),
+                                        createElement("a", { className: "glass-button-ghost text-primary border-primary/20 font-label-sm px-5 py-2.5 rounded-full active:scale-95 transition-all duration-300", href: "/me/edit" }, "编辑资料")
+                                    )
+                                ),
+                                createElement("p", { className: "break-words font-body-md text-on-surface-variant mt-2" }, profile.bio),
+                                renderMeStats(profile)
+                            )
+                        ),
+                        createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+                            createElement("div", { className: "flex items-center justify-between gap-4" },
+                                createElement("div", null,
+                                    createElement("h2", { className: "font-headline-md text-on-surface" }, "最近动态"),
+                                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "个人发布流会在后续接入 `/v1/feed/user/publish`。")
+                                ),
+                                createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/compose" }, "去发布")
+                            )
+                        )
+                    ),
+                    renderMeRightRail(profile)
+                )
+            )
+        )
+    );
+}
+
+function renderMeHeader(profile: MeProfile) {
+    return createElement("header", { className: "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
+        createElement("div", { className: "flex items-center gap-4" },
+            createElement("a", { className: "flex items-center gap-3 hover:opacity-80 transition-opacity duration-300", href: "/home" },
+                createElement("div", { className: "w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center shadow-md" },
+                    createElement("div", { className: "w-3 h-3 bg-white rounded-full" })
+                ),
+                createElement("span", { className: "font-display text-[24px] tracking-tight font-bold text-primary dark:text-primary-fixed" }, "zfeed")
+            ),
+            createElement("div", { className: "hidden md:flex ml-8 relative w-96 group md:ml-16 search-shell overflow-hidden" },
+                createElement("span", { className: "material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] group-focus-within:text-primary transition-colors duration-300" }, "search"),
+                createElement("input", { className: "glass-input w-full pl-10 pr-4 rounded-full font-body-md text-on-surface placeholder:text-on-surface-variant/70 border-white/40 bg-white/30 backdrop-blur-md focus:bg-white/60 transition-colors py-2.5", placeholder: "搜索内容、创作者或话题", type: "text" })
+            )
+        ),
+        createElement("nav", { className: "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
+            createElement("a", { className: "top-channel text-label-sm tracking-wide", href: "/home" }, "推荐"),
+            createElement("a", { className: "top-channel text-label-sm tracking-wide", href: "/following" }, "关注"),
+            createElement("a", { className: "top-channel text-label-sm tracking-wide", href: "/search" }, "搜索")
+        ),
+        createElement("div", { className: "flex items-center gap-5 pr-2 md:pr-12" },
+            createElement("button", { className: "hidden sm:flex glass-button-primary text-white font-label-sm py-2 rounded-full items-center gap-2 active:scale-95 px-6", type: "button" },
+                createElement("span", { className: "material-symbols-outlined text-[18px]" }, "add"),
+                "发布"
+            ),
+            renderMeAvatar(profile, "w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover")
+        )
+    );
+}
+
+function renderMeLeftRail() {
+    return createElement("aside", { className: "hidden lg:block lg:col-span-2 relative" },
+        createElement("div", { className: "sticky top-24 w-full flex flex-col gap-8" },
+            createElement("nav", { className: "flex flex-col gap-1" },
+                renderMeRailLink("/home", "home", "推荐"),
+                renderMeRailLink("/following", "person_add", "关注"),
+                renderMeRailLink("/search", "search", "搜索"),
+                renderMeRailLink("/settings", "settings", "设置")
+            )
+        )
+    );
+}
+
+function renderMeRailLink(href: string, icon: string, label: string) {
+    return createElement("a", { className: "flex items-center gap-3 text-on-surface-variant p-2 nav-link-hover rounded-lg active:scale-95", href },
+        createElement("span", { className: "material-symbols-outlined" }, icon),
+        createElement("span", { className: "font-label-sm text-[13px]" }, label)
+    );
+}
+
+function renderMeStats(profile: MeProfile) {
+    return createElement("div", { className: "profile-stat-line flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 font-label-sm" },
+        renderMeStat(profile.contentCount, "动态"),
+        createElement("span", { className: "text-outline/70" }, "·"),
+        renderMeStat(profile.followeeCount, "关注"),
+        createElement("span", { className: "text-outline/70" }, "·"),
+        renderMeStat(profile.followerCount, "粉丝"),
+        createElement("span", { className: "text-outline/70" }, "·"),
+        renderMeStat(profile.likeReceivedCount, "获赞"),
+        createElement("span", { className: "text-outline/70" }, "·"),
+        renderMeStat(profile.favoriteReceivedCount, "收藏")
+    );
+}
+
+function renderMeStat(value: number, label: string) {
+    return createElement("span", null,
+        createElement("strong", null, formatProfileCount(value)),
+        ` ${label}`
+    );
+}
+
+function renderMeRightRail(profile: MeProfile) {
+    return createElement("aside", { className: "hidden lg:block lg:col-span-3 relative" },
+        createElement("div", { className: "sticky top-24 flex flex-col gap-5" },
+            createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+                createElement("h3", { className: "font-headline-md text-[16px] text-on-surface mb-3" }, "创作数据"),
+                createElement("div", { className: "grid grid-cols-2 gap-3 text-center" },
+                    renderMeMetric("内容", profile.contentCount),
+                    renderMeMetric("粉丝", profile.followerCount),
+                    renderMeMetric("获赞", profile.likeReceivedCount),
+                    renderMeMetric("收藏", profile.favoriteReceivedCount)
+                )
+            ),
+            createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+                createElement("h3", { className: "font-headline-md text-[16px] text-on-surface mb-3" }, "资料完整度"),
+                createElement("p", { className: "text-[14px] leading-6 text-on-surface-variant" }, "昵称、头像和简介会展示在主页、评论和 Feed 中。")
+            )
+        )
+    );
+}
+
+function renderMeMetric(label: string, value: number) {
+    return createElement("div", { className: "rounded-2xl bg-white/35 px-3 py-3" },
+        createElement("div", { className: "font-display text-[20px] font-bold text-on-surface" }, formatProfileCount(value)),
+        createElement("div", { className: "font-meta-xs text-on-surface-variant" }, label)
+    );
+}
+
+function renderMeAvatar(profile: MeProfile, className: string) {
+    return profile.avatar
+        ? createElement("img", { alt: profile.nickname, className, src: profile.avatar })
+        : createElement("div", { className: `${className} flex items-center justify-center bg-primary text-white font-display text-[20px]` }, getProfileInitial(profile.nickname));
+}
+
+function getMeStateView(status: Exclude<MeProfileState["status"], "ready">) {
+    if (status === "auth-required") {
+        return {
+            state: "auth-required" as const,
+            description: "登录后才能查看我的主页。",
+            actionHref: `/login?next=${encodeURIComponent("/me")}`,
+            actionLabel: "去登录"
+        };
+    }
+
+    if (status === "loading") {
+        return {
+            state: "loading" as const,
+            title: "正在加载我的主页",
+            description: "正在获取你的个人资料和统计。"
+        };
+    }
+
+    return {
+        state: "error" as const,
+        title: "我的主页加载失败",
+        description: "请稍后重试。"
+    };
+}
+
+function normalizeMeProfile(response: MeProfileResponse): MeProfile {
+    const user = response.user_info ?? {};
+    const nickname = cleanProfileText(user.nickname) || "zfeed 用户";
+    return {
+        nickname,
+        avatar: cleanProfileText(user.avatar),
+        bio: cleanProfileText(user.bio) || "这个用户还没有填写简介。",
+        handle: getProfileHandle(user),
+        contentCount: normalizeProfileCount(response.content_count),
+        followeeCount: normalizeProfileCount(response.followee_count),
+        followerCount: normalizeProfileCount(response.follower_count),
+        likeReceivedCount: normalizeProfileCount(response.like_received_count),
+        favoriteReceivedCount: normalizeProfileCount(response.favorite_received_count)
+    };
+}
+
+function getProfileHandle(user: NonNullable<MeProfileResponse["user_info"]>) {
+    const raw = cleanProfileText(user.mobile) || cleanProfileText(user.email) || cleanProfileText(user.user_id);
+    return raw ? `@${raw}` : "@me";
+}
+
+function cleanProfileText(value: unknown) {
+    return typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+}
+
+function normalizeProfileCount(value: unknown) {
+    return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function formatProfileCount(value: number) {
+    return String(value);
+}
+
+function getProfileInitial(nickname: string) {
+    return nickname.trim().charAt(0).toUpperCase() || "Z";
 }
 
 function parseProfileKey(pathname: string, search: string) {
