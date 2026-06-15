@@ -156,6 +156,7 @@ function handleActionClick(event: MouseEvent) {
 
     const snapshot = captureButtonState(button);
     button.dataset.pending = "true";
+    button.disabled = true;
     applyOptimisticState(button, action);
 
     const request = action.kind === "like"
@@ -168,6 +169,7 @@ function handleActionClick(event: MouseEvent) {
             navigateToLogin();
         }
     }).finally(() => {
+        button.disabled = false;
         delete button.dataset.pending;
     });
 }

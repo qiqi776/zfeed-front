@@ -489,6 +489,32 @@ describe("App routes", () => {
         expect(screen.queryByText("raw failure")).not.toBeInTheDocument();
     });
 
+    it("disables content action buttons while the write request is pending", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "write-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        let resolveWrite!: (response: Response) => void;
+        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+            resolveWrite = resolve;
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const likeButton = (await screen.findAllByText("favorite"))[0].closest("button");
+        expect(likeButton).not.toBeNull();
+        fireEvent.click(likeButton!);
+
+        expect(likeButton).toBeDisabled();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        resolveWrite(jsonResponse({}));
+        await waitFor(() => expect(likeButton).not.toBeDisabled());
+    });
+
     it("follows a profile author with Bearer auth and optimistic feedback", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "follow-token",
