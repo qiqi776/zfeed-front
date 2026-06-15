@@ -104,6 +104,32 @@ function userPublishedFeedPayload(items: unknown[] = [defaultRecommendFeedItem({
     };
 }
 
+function contentDetailPayload(overrides: Record<string, unknown> = {}) {
+    return {
+        detail: {
+            content_id: "1001",
+            content_type: 1,
+            author_id: "7",
+            author_name: "Mira Chen",
+            author_avatar: "https://example.com/avatar.png",
+            title: "原始文章标题",
+            description: "原始文章摘要",
+            cover_url: "https://example.com/cover.png",
+            article_content: "第一段正文。\n第二段正文。",
+            video_url: "",
+            video_duration: 0,
+            published_at: 1765670400,
+            like_count: 12,
+            favorite_count: 5,
+            comment_count: 3,
+            is_liked: false,
+            is_favorited: false,
+            is_following_author: false,
+            ...overrides
+        }
+    };
+}
+
 describe("App routes", () => {
     beforeEach(() => {
         window.localStorage.clear();
@@ -633,6 +659,18 @@ describe("App routes", () => {
         expect(await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" })).toBeInTheDocument();
         unmount();
 
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "edit-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(contentDetailPayload())));
+        window.history.pushState({}, "", "/content/1001/edit");
+        render(<App />);
+        expect(await screen.findByRole("heading", { name: "编辑内容" })).toBeInTheDocument();
+        unmount();
+        window.localStorage.clear();
+
         window.history.pushState({}, "", "/search");
         render(<App />);
         expect(await screen.findByRole("heading", { name: "搜索" })).toBeInTheDocument();
@@ -841,6 +879,103 @@ describe("App routes", () => {
         const errorState = await screen.findByText("内容加载失败");
         expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
         expect(screen.queryByText("用 AI 构建产品：30 天从 0 到 1")).not.toBeInTheDocument();
+    });
+
+    it("shows an auth-required state on edit content when signed out", async () => {
+        window.history.pushState({}, "", "/content/1001/edit");
+
+        render(<App />);
+
+        const authState = await screen.findByText("登录后才能编辑内容。");
+        expect(authState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "auth-required");
+        expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fcontent%2F1001%2Fedit");
+        expect(screen.queryByLabelText("标题")).not.toBeInTheDocument();
+    });
+
+    it("loads editable article content from the API without executing user content", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "edit-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse(contentDetailPayload({
+            title: "可编辑标题 <script>alert(1)</script>",
+            description: "可编辑摘要",
+            article_content: "可编辑正文 <img src=x onerror=alert(1)>"
+        })));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/1001/edit");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "编辑内容" })).toBeInTheDocument();
+        expect(screen.getByLabelText("标题")).toHaveValue("可编辑标题 <script>alert(1)</script>");
+        expect(screen.getByLabelText("摘要")).toHaveValue("可编辑摘要");
+        expect(screen.getByLabelText("正文")).toHaveValue("可编辑正文 <img src=x onerror=alert(1)>");
+        expect(document.querySelector("script")).toBeNull();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/content/detail", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer edit-token"
+            }),
+            body: JSON.stringify({ content_id: "1001" })
+        }));
+    });
+
+    it("submits edited article content with Bearer auth and returns to detail", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "edit-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/content/detail") {
+                return jsonResponse(contentDetailPayload());
+            }
+
+            return jsonResponse({ content_id: 1001 });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/1001/edit");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("标题"), { target: { value: "更新后的文章标题" } });
+        fireEvent.change(screen.getByLabelText("摘要"), { target: { value: "更新后的文章摘要" } });
+        fireEvent.change(screen.getByLabelText("正文"), { target: { value: "更新后的文章正文" } });
+        fireEvent.click(screen.getByRole("button", { name: "保存修改" }));
+
+        expect(await screen.findByRole("button", { name: "保存中" })).toBeDisabled();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/content/article/1001", expect.objectContaining({
+            method: "PUT",
+            headers: expect.objectContaining({
+                Authorization: "Bearer edit-token"
+            }),
+            body: JSON.stringify({
+                title: "更新后的文章标题",
+                description: "更新后的文章摘要",
+                cover: "https://example.com/cover.png",
+                content: "更新后的文章正文"
+            })
+        })));
+        await waitFor(() => expect(window.location.pathname).toBe("/content/1001"));
+    });
+
+    it("shows a safe error when editable content cannot be loaded", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "edit-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ message: "raw edit failure" }, { status: 500 })));
+        window.history.pushState({}, "", "/content/1001/edit");
+
+        render(<App />);
+
+        const errorState = await screen.findByText("编辑内容加载失败");
+        expect(errorState.closest("[data-page-state]")).toHaveAttribute("data-page-state", "error");
+        expect(screen.queryByText("raw edit failure")).not.toBeInTheDocument();
+        expect(screen.queryByLabelText("标题")).not.toBeInTheDocument();
     });
 
     it("shows an auth-required state on edit profile when signed out", async () => {

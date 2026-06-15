@@ -53,6 +53,21 @@ type PublishArticleBody = {
     visibility: number;
 };
 
+type EditArticleBody = {
+    title?: string;
+    description?: string;
+    cover?: string;
+    content?: string;
+};
+
+type EditVideoBody = {
+    title?: string;
+    description?: string;
+    video_url?: string;
+    cover_url?: string;
+    duration?: number;
+};
+
 type SearchMode = "latest" | "relevance" | "hybrid";
 
 type SearchRequestBody = {
@@ -241,6 +256,10 @@ export function getContentDetail<T>(body: ContentDetailBody) {
     return apiRequest<T>("/v1/content/detail", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
+export function getEditableContentDetail<T>(body: ContentDetailBody) {
+    return apiRequest<T>("/v1/content/detail", { method: "POST", body, auth: true });
+}
+
 export function getUserProfile<T>(userId: UserProfileId) {
     return apiRequest<T>(`/v1/user/profile/${encodeURIComponent(String(userId))}`, { optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
@@ -259,6 +278,14 @@ export function updateProfile<T>(body: UpdateProfileBody) {
 
 export function publishArticle<T>(body: PublishArticleBody) {
     return apiRequest<T>("/v1/content/article/publish", { method: "POST", body, auth: true });
+}
+
+export function editArticle<T>(contentId: string, body: EditArticleBody) {
+    return apiRequest<T>(`/v1/content/article/${encodeURIComponent(contentId)}`, { method: "PUT", body, auth: true });
+}
+
+export function editVideo<T>(contentId: string, body: EditVideoBody) {
+    return apiRequest<T>(`/v1/content/video/${encodeURIComponent(contentId)}`, { method: "PUT", body, auth: true });
 }
 
 export function likeContent<T = unknown>(body: ContentActionBody) {

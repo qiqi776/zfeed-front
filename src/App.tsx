@@ -10,6 +10,7 @@ const pageComponents: Record<PageId, LazyExoticComponent<ComponentType>> = {
     following: lazy(() => import("./pages/FollowingPage").then((module) => ({ default: module.FollowingPage }))),
     profile: lazy(() => import("./pages/ProfilePage").then((module) => ({ default: module.ProfilePage }))),
     detail: lazy(() => import("./pages/DetailPage").then((module) => ({ default: module.DetailPage }))),
+    "edit-content": lazy(() => import("./pages/EditContentPage").then((module) => ({ default: module.EditContentPage }))),
     "edit-profile": lazy(() => import("./pages/EditProfilePage").then((module) => ({ default: module.EditProfilePage }))),
     search: lazy(() => import("./pages/SearchPage").then((module) => ({ default: module.SearchPage }))),
     compose: lazy(() => import("./pages/ComposePage").then((module) => ({ default: module.ComposePage }))),

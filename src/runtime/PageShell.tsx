@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import {
     commentContent,
     deleteComment,
+    editArticle,
+    editVideo,
     favoriteContent,
     followUser,
     likeContent,
@@ -62,6 +64,7 @@ export function PageShell({ title, htmlClass, bodyClass, styles, children }: Pag
             handleReplySubmitClick(event);
             handleDeleteCommentClick(event);
             handleCommentSubmitClick(event);
+            handleContentSaveClick(event);
             handleProfileSaveClick(event);
             handlePublishClick(event);
             handleActionClick(event);
@@ -504,6 +507,81 @@ function handleProfileSaveClick(event: MouseEvent) {
     });
 }
 
+function handleContentSaveClick(event: MouseEvent) {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest<HTMLButtonElement>("button");
+    if (!button || button.textContent?.trim() !== "保存修改") {
+        return;
+    }
+
+    const form = button.closest<HTMLElement>('[data-content-edit="true"]');
+    if (!form) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (button.dataset.pending === "true") {
+        return;
+    }
+
+    if (!readAuthSession()) {
+        navigateToLogin();
+        return;
+    }
+
+    const contentId = form.dataset.contentId ?? "";
+    const contentType = form.dataset.contentType ?? "article";
+    const title = getNamedFieldValue(form, "title");
+    const description = getNamedFieldValue(form, "description");
+    const content = getNamedFieldValue(form, "content");
+    const cover = getNamedFieldValue(form, "cover");
+    const videoUrl = getNamedFieldValue(form, "videoUrl") || content;
+    const duration = Number(getNamedFieldValue(form, "duration"));
+    const errors = validateEditContentFields({ title, description, content, contentType });
+    if (!contentId) {
+        showFormStatus(form, "保存失败，请重试", "error");
+        return;
+    }
+
+    if (errors.length > 0) {
+        showFormStatus(form, errors[0], "error");
+        return;
+    }
+
+    button.dataset.pending = "true";
+    button.disabled = true;
+    const previousText = button.textContent ?? "保存修改";
+    button.textContent = "保存中";
+
+    const request = contentType === "video"
+        ? editVideo(contentId, {
+            title,
+            description: optionalValue(description),
+            video_url: optionalValue(videoUrl),
+            cover_url: optionalValue(cover),
+            duration: Number.isFinite(duration) && duration > 0 ? duration : undefined
+        })
+        : editArticle(contentId, {
+            title,
+            description: optionalValue(description),
+            cover: optionalValue(cover),
+            content
+        });
+
+    request.then(() => {
+        window.setTimeout(() => navigateTo(`/content/${contentId}`), 0);
+    }).catch((error: unknown) => {
+        showFormStatus(form, "保存失败，请重试", "error");
+        button.textContent = previousText;
+        button.disabled = false;
+        delete button.dataset.pending;
+        if (isAuthError(error)) {
+            navigateToLogin();
+        }
+    });
+}
+
 function handlePublishClick(event: MouseEvent) {
     const target = event.target instanceof Element ? event.target : null;
     const button = target?.closest<HTMLButtonElement>("button");
@@ -879,6 +957,27 @@ function validatePublishFields(fields: { title: string; content: string }) {
 
     if (fields.content.length > 5000) {
         errors.push("正文最多 5000 字");
+    }
+
+    return errors;
+}
+
+function validateEditContentFields(fields: { title: string; description: string; content: string; contentType: string }) {
+    const errors: string[] = [];
+    if (!fields.title) {
+        errors.push("请输入标题");
+    }
+
+    if (!fields.content) {
+        errors.push(fields.contentType === "video" ? "请输入视频链接" : "请输入正文");
+    }
+
+    if (fields.title.length > 100) {
+        errors.push("标题最多 100 字");
+    }
+
+    if (fields.description.length > (fields.contentType === "video" ? 500 : 255)) {
+        errors.push(fields.contentType === "video" ? "摘要最多 500 字" : "摘要最多 255 字");
     }
 
     return errors;

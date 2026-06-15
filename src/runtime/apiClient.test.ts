@@ -5,9 +5,12 @@ import {
     authorizedFetch,
     commentContent,
     deleteComment,
+    editArticle,
+    editVideo,
     favoriteContent,
     getApiBaseUrl,
     getContentDetail,
+    getEditableContentDetail,
     getFollowFeed,
     getRecommendFeed,
     getUserProfile,
@@ -312,6 +315,63 @@ describe("apiClient", () => {
                 Authorization: "Bearer reader-token"
             }),
             body: JSON.stringify({ user_id: "1001", cursor: "", page_size: 20 })
+        }));
+    });
+
+    it("serializes authenticated content edit helpers", async () => {
+        saveAuthSession({
+            token: "editor-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        });
+        const fetchMock = vi.fn(async () => jsonResponse({ content_id: 1001 }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await getEditableContentDetail({ content_id: "1001" });
+        await editArticle("1001", {
+            title: "更新后的标题",
+            description: "更新后的摘要",
+            cover: "https://example.com/cover.png",
+            content: "更新后的正文"
+        });
+        await editVideo("1002", {
+            title: "更新后的视频",
+            description: "更新后的视频摘要",
+            video_url: "https://example.com/video.mp4",
+            cover_url: "https://example.com/video-cover.png",
+            duration: 120
+        });
+
+        expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/content/detail", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer editor-token"
+            }),
+            body: JSON.stringify({ content_id: "1001" })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(2, "/v1/content/article/1001", expect.objectContaining({
+            method: "PUT",
+            headers: expect.objectContaining({
+                Authorization: "Bearer editor-token"
+            }),
+            body: JSON.stringify({
+                title: "更新后的标题",
+                description: "更新后的摘要",
+                cover: "https://example.com/cover.png",
+                content: "更新后的正文"
+            })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(3, "/v1/content/video/1002", expect.objectContaining({
+            method: "PUT",
+            headers: expect.objectContaining({
+                Authorization: "Bearer editor-token"
+            }),
+            body: JSON.stringify({
+                title: "更新后的视频",
+                description: "更新后的视频摘要",
+                video_url: "https://example.com/video.mp4",
+                cover_url: "https://example.com/video-cover.png",
+                duration: 120
+            })
         }));
     });
 

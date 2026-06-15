@@ -9,6 +9,7 @@ describe("resolvePageRoute", () => {
         expect(resolvePageRoute("/user/jax")).toBe("profile");
         expect(resolvePageRoute("/following")).toBe("following");
         expect(resolvePageRoute("/content/article-1")).toBe("detail");
+        expect(resolvePageRoute("/content/1001/edit")).toBe("edit-content");
         expect(resolvePageRoute("/me/edit")).toBe("edit-profile");
         expect(resolvePageRoute("/search")).toBe("search");
         expect(resolvePageRoute("/compose")).toBe("compose");

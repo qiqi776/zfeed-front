@@ -4,6 +4,7 @@ export type PageId =
     | "following"
     | "profile"
     | "detail"
+    | "edit-content"
     | "edit-profile"
     | "search"
     | "compose"
@@ -30,6 +31,10 @@ const routeMap: Record<string, PageId> = {
 export function resolvePageRoute(pathname: string): PageId {
     if (/^\/user\/[^/]+$/.test(pathname)) {
         return "profile";
+    }
+
+    if (/^\/content\/[^/]+\/edit$/.test(pathname)) {
+        return "edit-content";
     }
 
     if (/^\/content\/[^/]+$/.test(pathname)) {

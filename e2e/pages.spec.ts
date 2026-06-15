@@ -10,6 +10,7 @@ const routes = [
     ["/user/jax", "用户主页真实发布内容"],
     ["/content/article-1", "用 AI 构建产品：30 天从 0 到 1"],
     ["/content/video-1", "创作工具的未来：AI 成为协作副驾"],
+    ["/content/1001/edit", "编辑内容"],
     ["/me/edit", "编辑资料"],
     ["/search", "搜索"],
     ["/compose", "发布"],
@@ -23,6 +24,10 @@ for (const [route, text] of routes) {
     test(`renders ${route}`, async ({ page }) => {
         if (route === "/following" || route === "/me") {
             await seedAuthSession(page);
+        }
+        if (route === "/content/1001/edit") {
+            await seedAuthSession(page);
+            await mockEditableContentDetail(page);
         }
         if (route === "/me") {
             await mockMeProfile(page);
@@ -70,6 +75,15 @@ test("keeps migrated edit profile form values visible", async ({ page }) => {
 
     await expect(page.getByLabel("昵称")).toHaveValue("Mira Chen");
     await expect(page.getByLabel("简介")).toContainText("关注创作者工具");
+});
+
+test("keeps migrated edit content form values visible", async ({ page }) => {
+    await seedAuthSession(page);
+    await mockEditableContentDetail(page);
+    await page.goto("/content/1001/edit", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByLabel("标题")).toHaveValue("原始文章标题");
+    await expect(page.getByLabel("正文")).toContainText("第一段正文。");
 });
 
 test("keeps liquid glass feed delegated interactions", async ({ page }) => {
@@ -269,6 +283,36 @@ async function mockUserPublishedFeed(page: Page) {
                 }],
                 cursor: "",
                 has_more: false
+            })
+        });
+    });
+}
+
+async function mockEditableContentDetail(page: Page) {
+    await page.route("**/v1/content/detail", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                detail: {
+                    content_id: "1001",
+                    content_type: 1,
+                    author_id: "7",
+                    author_name: "Mira Chen",
+                    author_avatar: "",
+                    title: "原始文章标题",
+                    description: "原始文章摘要",
+                    cover_url: "",
+                    article_content: "第一段正文。\n第二段正文。",
+                    video_url: "",
+                    video_duration: 0,
+                    published_at: 1765670400,
+                    like_count: 12,
+                    favorite_count: 5,
+                    comment_count: 3,
+                    is_liked: false,
+                    is_favorited: false,
+                    is_following_author: false
+                }
             })
         });
     });
