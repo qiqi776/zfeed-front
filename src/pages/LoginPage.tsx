@@ -71,6 +71,10 @@ export function LoginPage() {
                         noValidate: true,
                         onSubmit: async (event) => {
                             event.preventDefault();
+                            if (isSubmitting) {
+                                return;
+                            }
+
                             const nextErrors: LoginErrors = {};
 
                             if (!phone.trim()) {

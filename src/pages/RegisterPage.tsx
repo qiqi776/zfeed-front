@@ -79,6 +79,10 @@ export function RegisterPage() {
                         noValidate: true,
                         onSubmit: async (event) => {
                             event.preventDefault();
+                            if (isSubmitting) {
+                                return;
+                            }
+
                             const nextErrors: RegisterErrors = {};
 
                             if (!phone.trim()) {

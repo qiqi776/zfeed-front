@@ -313,6 +313,36 @@ describe("App routes", () => {
         });
     });
 
+    it("prevents duplicate login submissions while the request is pending", async () => {
+        let resolveLogin!: (response: Response) => void;
+        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+            resolveLogin = resolve;
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/login");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("手机号"), { target: { value: "13800138000" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "password123" } });
+        const form = screen.getByRole("button", { name: "登录" }).closest("form");
+        expect(form).not.toBeNull();
+
+        fireEvent.submit(form!);
+        expect(await screen.findByRole("button", { name: "登录中" })).toBeDisabled();
+        fireEvent.submit(form!);
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        resolveLogin(jsonResponse({
+            user_id: 7,
+            token: "login-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600,
+            nickname: "Mira Chen",
+            avatar: "https://example.com/avatar.png"
+        }));
+        await waitFor(() => expect(window.location.pathname).toBe("/home"));
+    });
+
     it("returns to a safe next path after login", async () => {
         const fetchMock = vi.fn(async () => jsonResponse({
             user_id: 7,
@@ -454,6 +484,35 @@ describe("App routes", () => {
             token: "register-token",
             user: { userId: 9, nickname: "New User" }
         });
+    });
+
+    it("prevents duplicate register submissions while the request is pending", async () => {
+        let resolveRegister!: (response: Response) => void;
+        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+            resolveRegister = resolve;
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/register");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("手机号"), { target: { value: "13900139000" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "password123" } });
+        fireEvent.change(screen.getByLabelText("昵称"), { target: { value: "New User" } });
+        const form = screen.getByRole("button", { name: "注册" }).closest("form");
+        expect(form).not.toBeNull();
+
+        fireEvent.submit(form!);
+        expect(await screen.findByRole("button", { name: "注册中" })).toBeDisabled();
+        fireEvent.submit(form!);
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        resolveRegister(jsonResponse({
+            user_id: 9,
+            token: "register-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600
+        }));
+        await waitFor(() => expect(window.location.pathname).toBe("/me"));
     });
 
     it("opens compose from the primary publish button", async () => {
