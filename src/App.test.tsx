@@ -662,6 +662,37 @@ describe("App routes", () => {
         })));
     });
 
+    it("disables the reply submit button while the request is pending", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "reply-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        let resolveReply!: (response: Response) => void;
+        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+            resolveReply = resolve;
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        const replyButtons = await screen.findAllByRole("button", { name: "回复" });
+        fireEvent.click(replyButtons[0]);
+
+        const replyInput = await screen.findByPlaceholderText("回复 Chen Zhiyuan...");
+        fireEvent.change(replyInput, { target: { value: "请求中禁用回复按钮" } });
+        const replyComposer = replyInput.closest("[data-reply-composer]");
+        expect(replyComposer).not.toBeNull();
+        fireEvent.click(within(replyComposer as HTMLElement).getByRole("button", { name: "发送" }));
+
+        expect(await within(replyComposer as HTMLElement).findByRole("button", { name: "发送中" })).toBeDisabled();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        resolveReply(jsonResponse({ comment_id: "5004" }));
+        await waitFor(() => expect(within(replyComposer as HTMLElement).getByRole("button", { name: "发送" })).not.toBeDisabled());
+    });
+
     it("deletes my own comment optimistically with Bearer auth", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "delete-token",
