@@ -640,7 +640,7 @@ const variants: Record<string, PageVariant> = {
                                             )
                                         )
                                     ),
-                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300" },
+                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300", "data-user-id": "2001" },
                                         "关注"
                                     )
                                 ),
@@ -656,7 +656,7 @@ const variants: Record<string, PageVariant> = {
                                             )
                                         )
                                     ),
-                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300" },
+                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300", "data-user-id": "2002" },
                                         "关注"
                                     )
                                 ),
@@ -674,7 +674,7 @@ const variants: Record<string, PageVariant> = {
                                             )
                                         )
                                     ),
-                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300" },
+                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300", "data-user-id": "2003" },
                                         "关注"
                                     )
                                 )
@@ -1293,7 +1293,7 @@ const variants: Record<string, PageVariant> = {
                                             )
                                         )
                                     ),
-                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300" },
+                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300", "data-user-id": "2001" },
                                         "关注"
                                     )
                                 ),
@@ -1309,7 +1309,7 @@ const variants: Record<string, PageVariant> = {
                                             )
                                         )
                                     ),
-                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300" },
+                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300", "data-user-id": "2002" },
                                         "关注"
                                     )
                                 ),
@@ -1327,7 +1327,7 @@ const variants: Record<string, PageVariant> = {
                                             )
                                         )
                                     ),
-                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300" },
+                                    createElement("button", { "className": "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300", "data-user-id": "2003" },
                                         "关注"
                                     )
                                 )

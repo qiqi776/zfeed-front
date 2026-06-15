@@ -1289,6 +1289,56 @@ describe("App routes", () => {
         })));
     });
 
+    it("follows a recommended detail author with the recommended user id", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "detail-follow-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ is_followed: true }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" });
+        const suggestedPanel = screen.getByRole("heading", { name: "为你推荐" }).closest(".glass-panel");
+        expect(suggestedPanel).not.toBeNull();
+        const suggestedAuthor = within(suggestedPanel as HTMLElement).getByText("Zhang Xiaolong").closest(".group");
+        expect(suggestedAuthor).not.toBeNull();
+        const followButton = within(suggestedAuthor as HTMLElement).getByRole("button", { name: "关注" });
+        fireEvent.click(followButton);
+
+        expect(await within(suggestedAuthor as HTMLElement).findByRole("button", { name: "已关注" })).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/followings", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer detail-follow-token"
+            }),
+            body: JSON.stringify({ target_user_id: "2001" })
+        })));
+    });
+
+    it("guides unauthenticated recommended detail follows to login without calling the write API", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({}));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" });
+        const suggestedPanel = screen.getByRole("heading", { name: "为你推荐" }).closest(".glass-panel");
+        expect(suggestedPanel).not.toBeNull();
+        const suggestedAuthor = within(suggestedPanel as HTMLElement).getByText("Zhang Xiaolong").closest(".group");
+        expect(suggestedAuthor).not.toBeNull();
+        const followButton = within(suggestedAuthor as HTMLElement).getByRole("button", { name: "关注" });
+        fireEvent.click(followButton);
+
+        await waitFor(() => expect(window.location.pathname).toBe("/login"));
+        expect(window.location.search).toBe("?next=%2Fcontent%2Farticle-1");
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("follows a recommended home author with Bearer auth and optimistic feedback", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "follow-token",
