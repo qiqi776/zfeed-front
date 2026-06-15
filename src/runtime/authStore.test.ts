@@ -72,4 +72,13 @@ describe("authStore", () => {
 
         expect(readAuthSession()).toBeNull();
     });
+
+    it("rejects invalid sessions before saving them", () => {
+        expect(() => saveAuthSession({
+            token: "",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600
+        })).toThrow("Invalid auth session");
+
+        expect(window.localStorage.getItem("zfeed.auth.session")).toBeNull();
+    });
 });

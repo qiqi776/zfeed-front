@@ -37,6 +37,11 @@ export function readAuthSession(): AuthSession | null {
 }
 
 export function saveAuthSession(session: AuthSession) {
+    if (!isValidToken(session.token) || !isValidExpiry(session.expiredAt) || isExpired(session.expiredAt)) {
+        clearAuthSession();
+        throw new Error("Invalid auth session");
+    }
+
     window.localStorage.setItem(storageKey, JSON.stringify(session));
 }
 
