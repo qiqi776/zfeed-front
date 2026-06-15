@@ -257,6 +257,7 @@ function handleCommentSubmitClick(event: MouseEvent) {
     }
 
     button.dataset.pending = "true";
+    button.disabled = true;
     const previousText = button.textContent ?? "发送";
     button.textContent = "发送中";
     const pendingComment = insertPendingComment(button, comment);
@@ -278,6 +279,7 @@ function handleCommentSubmitClick(event: MouseEvent) {
         }
     }).finally(() => {
         button.textContent = previousText;
+        button.disabled = false;
         delete button.dataset.pending;
     });
 }

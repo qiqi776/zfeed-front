@@ -597,6 +597,32 @@ describe("App routes", () => {
         })));
     });
 
+    it("disables the comment submit button while the request is pending", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "comment-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7, nickname: "Mira Chen" }
+        }));
+        let resolveComment!: (response: Response) => void;
+        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+            resolveComment = resolve;
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/article-1");
+
+        render(<App />);
+
+        const composer = await screen.findByPlaceholderText("写下你的观点，补充或提问...");
+        fireEvent.change(composer, { target: { value: "请求中禁用评论按钮" } });
+        fireEvent.click(screen.getByRole("button", { name: "发送" }));
+
+        expect(await screen.findByRole("button", { name: "发送中" })).toBeDisabled();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        resolveComment(jsonResponse({ comment_id: "5003" }));
+        await waitFor(() => expect(screen.getByRole("button", { name: "发送" })).not.toBeDisabled());
+    });
+
     it("posts a reply from an inline reply composer with Bearer auth", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "reply-token",
