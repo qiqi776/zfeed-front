@@ -108,7 +108,7 @@ export function LoginPage() {
                                         avatar: response.avatar
                                     }
                                 });
-                                navigateTo("/home");
+                                navigateTo(resolveSafeNextPath());
                             } catch {
                                 setErrors({ form: "手机号或密码不正确" });
                             } finally {
@@ -171,4 +171,22 @@ function renderField(
         }),
         error ? createElement("span", { className: "text-[12px] text-red-600" }, error) : null
     );
+}
+
+function resolveSafeNextPath() {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (!next || !next.startsWith("/") || next.startsWith("//")) {
+        return "/home";
+    }
+
+    try {
+        const url = new URL(next, window.location.origin);
+        if (url.origin !== window.location.origin || url.pathname === "/login" || url.pathname === "/register") {
+            return "/home";
+        }
+
+        return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+        return "/home";
+    }
 }

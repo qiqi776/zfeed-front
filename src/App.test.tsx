@@ -235,6 +235,46 @@ describe("App routes", () => {
         });
     });
 
+    it("returns to a safe next path after login", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({
+            user_id: 7,
+            token: "login-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600,
+            nickname: "Mira Chen",
+            avatar: "https://example.com/avatar.png"
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/login?next=%2Fcompose");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("手机号"), { target: { value: "13800138000" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "password123" } });
+        fireEvent.click(screen.getByRole("button", { name: "登录" }));
+
+        await waitFor(() => expect(window.location.pathname).toBe("/compose"));
+    });
+
+    it("ignores unsafe external next paths after login", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({
+            user_id: 7,
+            token: "login-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600,
+            nickname: "Mira Chen",
+            avatar: "https://example.com/avatar.png"
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/login?next=https%3A%2F%2Fevil.example%2Fsteal");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("手机号"), { target: { value: "13800138000" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "password123" } });
+        fireEvent.click(screen.getByRole("button", { name: "登录" }));
+
+        await waitFor(() => expect(window.location.pathname).toBe("/home"));
+    });
+
     it("shows a sanitized login error without storing a session", async () => {
         vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ message: "raw backend failure" }, { status: 401 })));
         window.history.pushState({}, "", "/login");
@@ -328,6 +368,16 @@ describe("App routes", () => {
 
         await waitFor(() => expect(window.location.pathname).toBe("/compose"));
         expect(await screen.findByRole("heading", { name: "发布" })).toBeInTheDocument();
+    });
+
+    it("shows an auth-required state on compose with a next-aware login link", async () => {
+        window.history.pushState({}, "", "/compose");
+
+        render(<App />);
+
+        expect(await screen.findByText("发布需要登录。")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "去登录" })).toHaveAttribute("href", "/login?next=%2Fcompose");
+        expect(screen.queryByPlaceholderText("标题")).not.toBeInTheDocument();
     });
 
     it("opens search from the global search box", async () => {

@@ -42,7 +42,7 @@ export function ComposePage() {
                         )
                         : createElement("div", { className: "mt-6 rounded-2xl border border-white/40 bg-white/35 px-4 py-4 text-[14px] leading-7 text-on-surface-variant" },
                             "发布需要登录。",
-                            createElement("a", { className: "ml-2 text-primary font-label-sm", href: "/login" }, "去登录")
+                            createElement("a", { className: "ml-2 text-primary font-label-sm", href: `/login?next=${encodeURIComponent("/compose")}` }, "去登录")
                         )
                 )
             )
