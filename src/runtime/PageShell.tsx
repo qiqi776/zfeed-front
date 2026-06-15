@@ -205,6 +205,7 @@ function handleFollowClick(event: MouseEvent) {
     const snapshot = captureButtonState(button);
     const nextFollowed = label !== "已关注";
     button.dataset.pending = "true";
+    button.disabled = true;
     button.textContent = nextFollowed ? "已关注" : "关注";
 
     const request = nextFollowed ? followUser({ target_user_id: targetUserId }) : unfollowUser({ target_user_id: targetUserId });
@@ -214,6 +215,7 @@ function handleFollowClick(event: MouseEvent) {
             navigateToLogin();
         }
     }).finally(() => {
+        button.disabled = false;
         delete button.dataset.pending;
     });
 }

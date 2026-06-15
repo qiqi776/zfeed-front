@@ -540,6 +540,31 @@ describe("App routes", () => {
         })));
     });
 
+    it("disables follow buttons while the request is pending", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "follow-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        let resolveFollow!: (response: Response) => void;
+        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
+            resolveFollow = resolve;
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/user/jax");
+
+        render(<App />);
+
+        const followButton = (await screen.findAllByRole("button", { name: /关注/ }))[0];
+        fireEvent.click(followButton);
+
+        expect(await screen.findByRole("button", { name: "已关注" })).toBeDisabled();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        resolveFollow(jsonResponse({ is_followed: true }));
+        await waitFor(() => expect(followButton).not.toBeDisabled());
+    });
+
     it("posts a content comment with optimistic insertion and clears the composer", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "comment-token",
