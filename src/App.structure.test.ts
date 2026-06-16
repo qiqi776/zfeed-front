@@ -35,8 +35,7 @@ describe("React page structure", () => {
                 "EditProfilePage.tsx",
                 "SearchPage.tsx",
                 "ComposePage.tsx",
-                "SettingsPage.tsx",
-                "LiquidGlassFeedPage.tsx"
+                "SettingsPage.tsx"
             ])
         );
     });

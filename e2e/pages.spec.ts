@@ -8,14 +8,12 @@ const routes = [
     ["/register", "创建 zfeed 账号"],
     ["/me", "Mira Chen"],
     ["/user/jax", "用户主页真实发布内容"],
-    ["/content/article-1", "用 AI 构建产品：30 天从 0 到 1"],
-    ["/content/video-1", "创作工具的未来：AI 成为协作副驾"],
+    ["/content/1001", "真实后端标题"],
     ["/content/1001/edit", "编辑内容"],
     ["/me/edit", "编辑资料"],
     ["/search", "搜索"],
     ["/compose", "发布"],
-    ["/settings", "设置"],
-    ["/liquid-glass-feed", "推荐 Feed"]
+    ["/settings", "设置"]
 ] as const;
 
 const routeReadyTimeoutMs = 15_000;
@@ -28,6 +26,10 @@ for (const [route, text] of routes) {
         if (route === "/content/1001/edit") {
             await seedAuthSession(page);
             await mockEditableContentDetail(page);
+        }
+        if (route === "/content/1001") {
+            await mockContentDetail(page);
+            await mockCommentList(page);
         }
         if (route === "/me") {
             await mockMeProfile(page);
@@ -86,20 +88,6 @@ test("keeps migrated edit content form values visible", async ({ page }) => {
     await expect(page.getByLabel("正文")).toContainText("第一段正文。");
 });
 
-test("keeps liquid glass feed delegated interactions", async ({ page }) => {
-    await page.goto("/liquid-glass-feed", { waitUntil: "domcontentloaded" });
-
-    const bookmark = page.locator(".action").filter({ has: page.locator('[data-lucide="bookmark"]') }).first();
-    await expect(bookmark).toHaveText(/已收藏/);
-    await bookmark.click();
-    await expect(bookmark).toHaveText(/收藏/);
-    await expect(bookmark).not.toHaveClass(/bookmarked/);
-
-    const hotSegment = page.locator(".segment", { hasText: "最新" }).first();
-    await hotSegment.click();
-    await expect(hotSegment).toHaveClass(/active/);
-});
-
 test("does not serve old .html URLs", async ({ page }) => {
     await page.goto("/following.html", { waitUntil: "domcontentloaded" });
 
@@ -114,6 +102,9 @@ test("does not serve removed legacy product URLs", async ({ page }) => {
     await expect(page.getByText("页面不存在")).toBeVisible();
 
     await page.goto("/edit-profile?user=me", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("页面不存在")).toBeVisible();
+
+    await page.goto("/liquid-glass-feed", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("页面不存在")).toBeVisible();
 });
 
@@ -313,6 +304,62 @@ async function mockEditableContentDetail(page: Page) {
                     is_favorited: false,
                     is_following_author: false
                 }
+            })
+        });
+    });
+}
+
+async function mockContentDetail(page: Page) {
+    await page.route("**/v1/content/detail", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                detail: {
+                    content_id: "1001",
+                    content_type: 1,
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "1",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    cover_url: "",
+                    article_content: "真实后端正文",
+                    video_url: "",
+                    video_duration: 0,
+                    published_at: 1765670400,
+                    like_count: 12,
+                    favorite_count: 5,
+                    comment_count: 1,
+                    is_liked: false,
+                    is_favorited: false,
+                    is_following_author: false
+                }
+            })
+        });
+    });
+}
+
+async function mockCommentList(page: Page) {
+    await page.route("**/v1/interaction/comment/list", async (route) => {
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                comments: [{
+                    comment_id: 3001,
+                    content_id: 1001,
+                    user_id: 2001,
+                    reply_to_user_id: 0,
+                    parent_id: 0,
+                    root_id: 3001,
+                    comment: "真实评论内容",
+                    created_at: 1765670400,
+                    status: 1,
+                    user_name: "测试1",
+                    user_avatar: "1",
+                    reply_count: 0
+                }],
+                next_cursor: 0,
+                has_more: false
             })
         });
     });

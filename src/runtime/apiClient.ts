@@ -100,6 +100,19 @@ type ContentDetailBody = {
     content_id: string;
 };
 
+type CommentListBody = {
+    content_id: string;
+    scene: "content";
+    cursor: string | number;
+    page_size: number;
+};
+
+type CommentReplyListBody = {
+    comment_id: string;
+    cursor: string | number;
+    page_size: number;
+};
+
 type UserProfileId = string | number;
 
 export class ApiError extends Error {
@@ -258,6 +271,14 @@ export function getContentDetail<T>(body: ContentDetailBody) {
 
 export function getEditableContentDetail<T>(body: ContentDetailBody) {
     return apiRequest<T>("/v1/content/detail", { method: "POST", body, auth: true });
+}
+
+export function listComments<T>(body: CommentListBody) {
+    return apiRequest<T>("/v1/interaction/comment/list", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
+}
+
+export function listCommentReplies<T>(body: CommentReplyListBody) {
+    return apiRequest<T>("/v1/interaction/comment/reply/list", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function getUserProfile<T>(userId: UserProfileId) {

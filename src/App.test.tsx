@@ -87,6 +87,32 @@ function userProfilePayload(overrides: Record<string, unknown> = {}) {
     };
 }
 
+function backendUserProfilePayload(overrides: Record<string, unknown> = {}) {
+    return {
+        user_profile: {
+            user_id: 2001,
+            nickname: "后端作者",
+            avatar: "https://example.com/backend-author.png",
+            bio: "后端真实用户简介",
+            gender: 0,
+            ...(overrides.user_profile as Record<string, unknown> | undefined)
+        },
+        counts: {
+            followee_count: 6,
+            follower_count: 21,
+            like_received_count: 34,
+            favorite_received_count: 8,
+            content_count: 13,
+            ...(overrides.counts as Record<string, unknown> | undefined)
+        },
+        viewer: {
+            is_following: true,
+            ...(overrides.viewer as Record<string, unknown> | undefined)
+        },
+        ...overrides
+    };
+}
+
 function userPublishedFeedPayload(items: unknown[] = [defaultRecommendFeedItem({
     content_id: 9101,
     author_id: 1001,
@@ -128,6 +154,39 @@ function contentDetailPayload(overrides: Record<string, unknown> = {}) {
             ...overrides
         }
     };
+}
+
+function defaultCommentItem(overrides: Record<string, unknown> = {}) {
+    return {
+        comment_id: "3001",
+        content_id: "1001",
+        user_id: "2001",
+        nickname: "测试1",
+        avatar: "1",
+        comment: "后端评论1",
+        root_id: "3001",
+        parent_id: "0",
+        reply_to_user_id: "0",
+        created_at: 1765670400,
+        reply_count: 0,
+        ...overrides
+    };
+}
+
+function commentListPayload(items: unknown[] = [defaultCommentItem()]) {
+    return {
+        comments: items,
+        next_cursor: 0,
+        has_more: false
+    };
+}
+
+function isContentDetailRequest(input: RequestInfo | URL) {
+    return input === "/v1/content/detail";
+}
+
+function isCommentListRequest(input: RequestInfo | URL) {
+    return input === "/v1/interaction/comment/list";
 }
 
 describe("App routes", () => {
@@ -297,13 +356,46 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByText("接口推荐内容 <script>alert(1)</script>")).toBeInTheDocument();
-        expect(screen.getByText("Jax <owner>")).toBeInTheDocument();
-        expect(screen.getByText("接口返回的推荐流摘要")).toBeInTheDocument();
+        expect(screen.getAllByText("Jax <owner>").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("接口返回的推荐流摘要").length).toBeGreaterThan(0);
         expect(document.querySelector("script")).toBeNull();
         expect(fetchMock).toHaveBeenCalledWith("/v1/feed/recommend", expect.objectContaining({
             method: "POST",
             body: JSON.stringify({ cursor: "", page_size: 20 })
         }));
+    });
+
+    it("renders home recommendations from backend feed authors", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse(recommendFeedPayload([
+            defaultRecommendFeedItem({
+                author_id: 1,
+                author_name: "测试1",
+                author_avatar: "1",
+                title: "测试内容1",
+                description: "测试内容1"
+            }),
+            defaultRecommendFeedItem({
+                content_id: 1002,
+                author_id: 2,
+                author_name: "测试2",
+                author_avatar: "2",
+                title: "测试内容2",
+                description: "测试内容2"
+            })
+        ])));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const suggestedPanel = await screen.findByRole("heading", { name: "为你推荐" }).then((heading) => heading.closest(".glass-panel"));
+        expect(suggestedPanel).not.toBeNull();
+        await waitFor(() => expect(within(suggestedPanel as HTMLElement).getByText("测试1")).toBeInTheDocument());
+        expect(within(suggestedPanel as HTMLElement).getByText("测试内容1")).toBeInTheDocument();
+        expect(within(suggestedPanel as HTMLElement).getByText("测试2")).toBeInTheDocument();
+        expect(document.querySelector('img[src="1"]')).toBeNull();
+        expect(screen.queryByText("Zhang Xiaolong")).not.toBeInTheDocument();
+        expect(screen.queryByText("AI 前线")).not.toBeInTheDocument();
     });
 
     it("shows an empty state when the home recommend feed has no items", async () => {
@@ -521,6 +613,42 @@ describe("App routes", () => {
         expect(screen.getByText("编辑资料")).toBeInTheDocument();
     });
 
+    it("renders numeric backend avatars as avatar text on my profile", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 20 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return jsonResponse(meProfilePayload({
+                    user_info: {
+                        user_id: 20,
+                        mobile: "13800000019",
+                        nickname: "测试19",
+                        avatar: "19",
+                        bio: "测试内容19",
+                        email: "test19@zfeed.local"
+                    }
+                }));
+            }
+
+            if (input === "/v1/feed/user/publish") {
+                return jsonResponse(userPublishedFeedPayload([]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/me");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "测试19" })).toBeInTheDocument();
+        expect(screen.getAllByText("19").length).toBeGreaterThan(0);
+        expect(document.querySelector('img[src="19"]')).toBeNull();
+    });
+
     it("loads my published feed from the signed-in user id", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "me-token",
@@ -654,9 +782,28 @@ describe("App routes", () => {
         expect(screen.queryByText("编辑资料")).not.toBeInTheDocument();
         unmount();
 
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                }));
+            }
+
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+
+            return jsonResponse({});
+        }));
         render(<App />);
-        expect(await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" })).toBeInTheDocument();
+        expect(await screen.findByRole("heading", { name: "真实后端标题" })).toBeInTheDocument();
         unmount();
 
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
@@ -729,6 +876,72 @@ describe("App routes", () => {
             headers: expect.objectContaining({
                 Authorization: "Bearer reader-token"
             })
+        }));
+    });
+
+    it("keeps supporting the legacy user_info envelope on the profile page", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "reader-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(userProfilePayload({
+            user_info: {
+                user_id: 1002,
+                nickname: "旧接口作者",
+                avatar: "https://example.com/legacy.png",
+                bio: "旧接口仍可读",
+                mobile: "13800000077"
+            },
+            followee_count: 2,
+            follower_count: 4,
+            like_received_count: 6,
+            favorite_received_count: 8,
+            content_count: 10,
+            is_following: true
+        }))));
+        window.history.pushState({}, "", "/user/legacy");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "旧接口作者" })).toBeInTheDocument();
+        expect(screen.getByText("旧接口仍可读")).toBeInTheDocument();
+        expect(screen.getAllByText("10").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("4").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("6").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("8").length).toBeGreaterThan(0);
+        expect(screen.getByRole("button", { name: "已关注" })).toHaveAttribute("data-user-id", "1002");
+    });
+
+    it("maps the backend user profile envelope into the profile page", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "reader-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/user/profile/2001") {
+                return jsonResponse(backendUserProfilePayload());
+            }
+
+            return jsonResponse(userPublishedFeedPayload([]));
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/user/2001");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "后端作者" })).toBeInTheDocument();
+        expect(screen.getByText("后端真实用户简介")).toBeInTheDocument();
+        expect(screen.getAllByText("13").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("6").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("21").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("34").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("8").length).toBeGreaterThan(0);
+        expect(screen.getByRole("button", { name: "已关注" })).toHaveAttribute("data-user-id", "2001");
+        expect(fetchMock).toHaveBeenCalledWith("/v1/feed/user/publish", expect.objectContaining({
+            body: JSON.stringify({ user_id: "2001", cursor: "", page_size: 20 })
         }));
     });
 
@@ -989,6 +1202,64 @@ describe("App routes", () => {
         expect(screen.queryByLabelText("昵称")).not.toBeInTheDocument();
     });
 
+    it("loads edit profile fields and recommendations from backend data", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "profile-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 20 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return jsonResponse(meProfilePayload({
+                    user_info: {
+                        user_id: 20,
+                        mobile: "13800000019",
+                        nickname: "测试19",
+                        avatar: "19",
+                        bio: "测试内容19",
+                        email: "test19@zfeed.local",
+                        gender: 0,
+                        birthday: 0
+                    }
+                }));
+            }
+
+            if (input === "/v1/search/users") {
+                return jsonResponse({
+                    items: [
+                        { user_id: 1, nickname: "测试1", avatar: "1", bio: "测试内容1", is_following: false },
+                        { user_id: 2, nickname: "测试2", avatar: "2", bio: "测试内容2", is_following: true },
+                        { user_id: 20, nickname: "测试19", avatar: "19", bio: "测试内容19", is_following: false }
+                    ],
+                    next_cursor: 0,
+                    has_more: false
+                });
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/me/edit");
+
+        render(<App />);
+
+        expect(await screen.findByDisplayValue("测试19")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("13800000019")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("19")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("测试内容19")).toBeInTheDocument();
+        expect(screen.getByText("测试1")).toBeInTheDocument();
+        expect(screen.getByText("测试内容1")).toBeInTheDocument();
+        expect(screen.getAllByText("19").length).toBeGreaterThan(0);
+        expect(document.querySelector('img[src="19"]')).toBeNull();
+        expect(screen.queryByDisplayValue("Mira Chen")).not.toBeInTheDocument();
+        expect(screen.queryByText("Zhang Xiaolong")).not.toBeInTheDocument();
+        expect(screen.queryByText("AI 前线")).not.toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledWith("/v1/search/users", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ query: "测试", page_size: 4, mode: "relevance" })
+        }));
+    });
+
     it("renders the login route with the required fields", async () => {
         window.history.pushState({}, "", "/login");
 
@@ -1029,6 +1300,30 @@ describe("App routes", () => {
         expect(await screen.findByText("请输入有效手机号")).toBeInTheDocument();
         expect(screen.getByText("密码至少 6 位")).toBeInTheDocument();
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("accepts backend-compatible login mobile formats", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({
+            user_id: 8,
+            token: "login-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600,
+            nickname: "Obs Author",
+            avatar: ""
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/login");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("手机号"), { target: { value: "+8611775980087" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "123456Aa!" } });
+        fireEvent.click(screen.getByRole("button", { name: "登录" }));
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/login", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ mobile: "+8611775980087", password: "123456Aa!" })
+        })));
+        expect(screen.queryByText("请输入有效手机号")).not.toBeInTheDocument();
     });
 
     it("submits login, stores the session, and enters the home feed", async () => {
@@ -1232,6 +1527,31 @@ describe("App routes", () => {
         expect(await screen.findByText("请输入有效手机号")).toBeInTheDocument();
         expect(screen.getByText("密码至少 6 位")).toBeInTheDocument();
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("accepts backend-compatible register mobile formats", async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({
+            user_id: 10,
+            token: "register-token",
+            expired_at: Math.floor(Date.now() / 1000) + 3600
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/register");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByLabelText("手机号"), { target: { value: "+8611775980088" } });
+        fireEvent.change(screen.getByLabelText("密码"), { target: { value: "123456Aa!" } });
+        fireEvent.click(screen.getByRole("button", { name: "注册" }));
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/users", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({
+                mobile: "+8611775980088",
+                password: "123456Aa!"
+            })
+        })));
+        expect(screen.queryByText("请输入有效手机号")).not.toBeInTheDocument();
     });
 
     it("submits register, stores the session, and enters me", async () => {
@@ -1704,54 +2024,88 @@ describe("App routes", () => {
         expect(screen.queryByText("raw follow failure")).not.toBeInTheDocument();
     });
 
-    it("follows a recommended detail author with the recommended user id", async () => {
+    it("follows the real detail author with the backend user id", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "detail-follow-token",
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7 }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({ is_followed: true }));
+        window.history.pushState({}, "", "/content/1001");
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1",
+                    author_name: "测试1",
+                    author_avatar: "https://example.com/author1.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文",
+                    is_following_author: false
+                }));
+            }
+
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+
+            if (input === "/v1/interaction/followings") {
+                return jsonResponse({ is_followed: true });
+            }
+
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
 
         render(<App />);
 
-        await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" });
-        const suggestedPanel = screen.getByRole("heading", { name: "为你推荐" }).closest(".glass-panel");
-        expect(suggestedPanel).not.toBeNull();
-        const suggestedAuthor = within(suggestedPanel as HTMLElement).getByText("Zhang Xiaolong").closest(".group");
-        expect(suggestedAuthor).not.toBeNull();
-        const followButton = within(suggestedAuthor as HTMLElement).getByRole("button", { name: "关注" });
+        await screen.findByRole("heading", { name: "真实后端标题" });
+        const followButton = screen.getByRole("button", { name: "关注作者" });
         fireEvent.click(followButton);
 
-        expect(await within(suggestedAuthor as HTMLElement).findByRole("button", { name: "已关注" })).toBeInTheDocument();
+        expect(await screen.findByRole("button", { name: "已关注" })).toBeInTheDocument();
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/followings", expect.objectContaining({
             method: "POST",
             headers: expect.objectContaining({
                 Authorization: "Bearer detail-follow-token"
             }),
-            body: JSON.stringify({ target_user_id: "2001" })
+            body: JSON.stringify({ target_user_id: "1" })
         })));
     });
 
-    it("guides unauthenticated recommended detail follows to login without calling the write API", async () => {
-        const fetchMock = vi.fn(async () => jsonResponse({}));
+    it("guides unauthenticated detail author follows to login without calling the write API", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1",
+                    author_name: "测试1",
+                    author_avatar: "https://example.com/author1.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文",
+                    is_following_author: false
+                }));
+            }
+
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
-        await screen.findByRole("heading", { name: "用 AI 构建产品：30 天从 0 到 1" });
-        const suggestedPanel = screen.getByRole("heading", { name: "为你推荐" }).closest(".glass-panel");
-        expect(suggestedPanel).not.toBeNull();
-        const suggestedAuthor = within(suggestedPanel as HTMLElement).getByText("Zhang Xiaolong").closest(".group");
-        expect(suggestedAuthor).not.toBeNull();
-        const followButton = within(suggestedAuthor as HTMLElement).getByRole("button", { name: "关注" });
+        await screen.findByRole("heading", { name: "真实后端标题" });
+        const followButton = screen.getByRole("button", { name: "关注作者" });
         fireEvent.click(followButton);
 
         await waitFor(() => expect(window.location.pathname).toBe("/login"));
-        expect(window.location.search).toBe("?next=%2Fcontent%2Farticle-1");
-        expect(fetchMock).not.toHaveBeenCalled();
+        expect(window.location.search).toBe("?next=%2Fcontent%2F1001");
+        expect(fetchMock).toHaveBeenCalledWith("/v1/content/detail", expect.anything());
     });
 
     it("follows a recommended home author with Bearer auth and optimistic feedback", async () => {
@@ -1762,7 +2116,15 @@ describe("App routes", () => {
         }));
         const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
             if (isRecommendFeedRequest(input)) {
-                return jsonResponse(recommendFeedPayload());
+                return jsonResponse(recommendFeedPayload([
+                    defaultRecommendFeedItem({
+                        author_id: 1,
+                        author_name: "测试1",
+                        author_avatar: "1",
+                        title: "测试内容1",
+                        description: "测试内容1"
+                    })
+                ]));
             }
 
             return jsonResponse({ is_followed: true });
@@ -1772,8 +2134,12 @@ describe("App routes", () => {
 
         render(<App />);
 
-        const suggestedFollowButtons = await screen.findAllByRole("button", { name: "关注" });
-        fireEvent.click(suggestedFollowButtons[0]);
+        const suggestedPanel = await screen.findByRole("heading", { name: "为你推荐" }).then((heading) => heading.closest(".glass-panel"));
+        expect(suggestedPanel).not.toBeNull();
+        const suggestedAuthor = within(suggestedPanel as HTMLElement).getByText("测试1").closest("[data-suggested-user-id]");
+        expect(suggestedAuthor).not.toBeNull();
+        const followButton = within(suggestedAuthor as HTMLElement).getByRole("button", { name: "关注" });
+        fireEvent.click(followButton);
 
         expect(await screen.findByRole("button", { name: "已关注" })).toBeInTheDocument();
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/followings", expect.objectContaining({
@@ -1781,7 +2147,7 @@ describe("App routes", () => {
             headers: expect.objectContaining({
                 Authorization: "Bearer follow-token"
             }),
-            body: JSON.stringify({ target_user_id: "2001" })
+            body: JSON.stringify({ target_user_id: "1" })
         })));
     });
 
@@ -1847,9 +2213,28 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7, nickname: "Mira Chen" }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({ comment_id: "5001" }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                }));
+            }
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+            if (input === "/v1/interaction/comment") {
+                return jsonResponse({ comment_id: "5001" });
+            }
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
@@ -1879,9 +2264,25 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7, nickname: "Mira Chen" }
         }));
-        const fetchMock = vi.fn();
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                }));
+            }
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
@@ -1890,7 +2291,7 @@ describe("App routes", () => {
         fireEvent.click(screen.getByRole("button", { name: "发送" }));
 
         expect(await screen.findByText("评论最多 255 字")).toBeInTheDocument();
-        expect(fetchMock).not.toHaveBeenCalled();
+        expect(fetchMock).not.toHaveBeenCalledWith("/v1/interaction/comment", expect.anything());
     });
 
     it("disables the comment submit button while the request is pending", async () => {
@@ -1900,11 +2301,27 @@ describe("App routes", () => {
             user: { userId: 7, nickname: "Mira Chen" }
         }));
         let resolveComment!: (response: Response) => void;
-        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
-            resolveComment = resolve;
-        }));
+        const fetchMock = vi.fn((input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return Promise.resolve(jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                })));
+            }
+            if (isCommentListRequest(input)) {
+                return Promise.resolve(jsonResponse(commentListPayload([])));
+            }
+            return new Promise<Response>((resolve) => {
+                resolveComment = resolve;
+            });
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
@@ -1913,7 +2330,9 @@ describe("App routes", () => {
         fireEvent.click(screen.getByRole("button", { name: "发送" }));
 
         expect(await screen.findByRole("button", { name: "发送中" })).toBeDisabled();
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
+            method: "POST"
+        }));
 
         resolveComment(jsonResponse({ comment_id: "5003" }));
         await waitFor(() => expect(screen.getByRole("button", { name: "发送" })).not.toBeDisabled());
@@ -1925,16 +2344,40 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7, nickname: "Mira Chen" }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({ comment_id: "5002" }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                }));
+            }
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([defaultCommentItem({
+                    comment_id: "3001",
+                    user_id: "2001",
+                    nickname: "测试1",
+                    comment: "后端评论1"
+                })]));
+            }
+            if (input === "/v1/interaction/comment") {
+                return jsonResponse({ comment_id: "5002" });
+            }
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
         const replyButtons = await screen.findAllByRole("button", { name: "回复" });
         fireEvent.click(replyButtons[0]);
 
-        const replyInput = await screen.findByPlaceholderText("回复 Chen Zhiyuan...");
+        const replyInput = await screen.findByPlaceholderText("回复 测试1...");
         fireEvent.change(replyInput, { target: { value: "补充一下这条回复" } });
         const replyComposer = replyInput.closest("[data-reply-composer]");
         expect(replyComposer).not.toBeNull();
@@ -1965,25 +2408,48 @@ describe("App routes", () => {
             user: { userId: 7, nickname: "Mira Chen" }
         }));
         let resolveReply!: (response: Response) => void;
-        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
-            resolveReply = resolve;
-        }));
+        const fetchMock = vi.fn((input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return Promise.resolve(jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                })));
+            }
+            if (isCommentListRequest(input)) {
+                return Promise.resolve(jsonResponse(commentListPayload([defaultCommentItem({
+                    comment_id: "3001",
+                    user_id: "2001",
+                    nickname: "测试1",
+                    comment: "后端评论1"
+                })])));
+            }
+            return new Promise<Response>((resolve) => {
+                resolveReply = resolve;
+            });
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
         const replyButtons = await screen.findAllByRole("button", { name: "回复" });
         fireEvent.click(replyButtons[0]);
 
-        const replyInput = await screen.findByPlaceholderText("回复 Chen Zhiyuan...");
+        const replyInput = await screen.findByPlaceholderText("回复 测试1...");
         fireEvent.change(replyInput, { target: { value: "请求中禁用回复按钮" } });
         const replyComposer = replyInput.closest("[data-reply-composer]");
         expect(replyComposer).not.toBeNull();
         fireEvent.click(within(replyComposer as HTMLElement).getByRole("button", { name: "发送" }));
 
         expect(await within(replyComposer as HTMLElement).findByRole("button", { name: "发送中" })).toBeDisabled();
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
+            method: "POST"
+        }));
 
         resolveReply(jsonResponse({ comment_id: "5004" }));
         await waitFor(() => expect(within(replyComposer as HTMLElement).getByRole("button", { name: "发送" })).not.toBeDisabled());
@@ -1995,9 +2461,31 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7, nickname: "Mira Chen" }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({}));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                }));
+            }
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([defaultCommentItem({
+                    comment_id: "3003",
+                    root_id: "3003",
+                    user_id: "7",
+                    nickname: "测试7",
+                    comment: "评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。"
+                })]));
+            }
+            return jsonResponse({});
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
@@ -2025,9 +2513,31 @@ describe("App routes", () => {
             expiredAt: Math.floor(Date.now() / 1000) + 3600,
             user: { userId: 7, nickname: "Mira Chen" }
         }));
-        const fetchMock = vi.fn(async () => jsonResponse({ message: "raw delete failure" }, { status: 500 }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1001",
+                    author_name: "测试作者",
+                    author_avatar: "https://example.com/author.png",
+                    title: "真实后端标题",
+                    description: "真实后端摘要",
+                    article_content: "真实后端正文"
+                }));
+            }
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([defaultCommentItem({
+                    comment_id: "3003",
+                    root_id: "3003",
+                    user_id: "7",
+                    nickname: "测试7",
+                    comment: "评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。"
+                })]));
+            }
+            return jsonResponse({ message: "raw delete failure" }, { status: 500 });
+        });
         vi.stubGlobal("fetch", fetchMock);
-        window.history.pushState({}, "", "/content/article-1");
+        window.history.pushState({}, "", "/content/1001");
 
         render(<App />);
 
@@ -2080,8 +2590,11 @@ describe("App routes", () => {
             }),
             body: JSON.stringify({
                 nickname: "Mira Updated",
+                avatar: undefined,
                 bio: "新的简介",
-                email: "mira.updated@example.com"
+                email: "mira.updated@example.com",
+                gender: 0,
+                birthday: undefined
             })
         })));
     });
@@ -2093,9 +2606,19 @@ describe("App routes", () => {
             user: { userId: 7 }
         }));
         let resolveProfileSave!: (response: Response) => void;
-        const fetchMock = vi.fn(() => new Promise<Response>((resolve) => {
-            resolveProfileSave = resolve;
-        }));
+        const fetchMock = vi.fn((input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return Promise.resolve(jsonResponse(meProfilePayload()));
+            }
+
+            if (input === "/v1/search/users") {
+                return Promise.resolve(jsonResponse({ items: [] }));
+            }
+
+            return new Promise<Response>((resolve) => {
+                resolveProfileSave = resolve;
+            });
+        });
         vi.stubGlobal("fetch", fetchMock);
         window.history.pushState({}, "", "/me/edit");
 
@@ -2105,7 +2628,9 @@ describe("App routes", () => {
         fireEvent.click(screen.getByRole("button", { name: /保存/ }));
 
         expect(await screen.findByRole("button", { name: /保存中/ })).toBeDisabled();
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith("/v1/users/me/profile", expect.objectContaining({
+            method: "PUT"
+        }));
 
         resolveProfileSave(jsonResponse({}));
         expect(await screen.findByText("资料已保存")).toBeInTheDocument();

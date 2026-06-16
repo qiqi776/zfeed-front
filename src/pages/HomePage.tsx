@@ -1,6 +1,8 @@
 import { createElement, useEffect, useState } from "react";
 import { getRecommendFeed } from "../runtime/apiClient";
+import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
+import { renderUserAvatar } from "./avatar";
 import { PageState } from "./PageState";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
@@ -24,6 +26,13 @@ type RecommendFeedItem = {
 type RecommendFeedResponse = {
     items?: RecommendFeedItem[];
     snapshot_id?: string;
+};
+
+type SuggestedFeedAuthor = {
+    userId: string;
+    nickname: string;
+    avatar?: string;
+    description: string;
 };
 
 type RecommendFeedState =
@@ -176,7 +185,7 @@ function renderHomeHeader() {
                 "发布"
             ),
             createElement("a", { "aria-label": "进入我的主页", href: "/me" },
-                createElement("div", { className: "w-8 h-8 rounded-full border-2 border-white bg-white/55 shadow-sm" })
+                renderCurrentUserAvatar("w-8 h-8 rounded-full border-2 border-white bg-white/55 shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out", "text-[12px]")
             )
         )
     );
@@ -221,7 +230,7 @@ function renderRailLink(href: string, icon: string, label: string, active = fals
 function renderComposer() {
     return createElement("div", { className: "glass-panel rounded-2xl p-5 hover-lift shine-effect" },
         createElement("div", { className: "flex gap-4 items-start mb-4" },
-            createElement("div", { className: "w-10 h-10 rounded-full border border-white bg-white/55 shadow-sm" }),
+            renderCurrentUserAvatar("w-10 h-10 rounded-full border border-white bg-white/55 shadow-sm object-cover", "text-[13px]"),
             createElement("div", { className: "composer-shell" },
                 createElement("input", { className: "w-full min-h-11 bg-transparent border-none text-body-lg focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300", placeholder: "分享你的想法、灵感或最新动态...", type: "text" })
             )
@@ -283,9 +292,11 @@ function renderFeedCard(item: RecommendFeedItem) {
     return createElement("article", { className: "glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect", key: contentId },
         createElement("div", { className: "relative z-20 flex items-center justify-between mb-4" },
             createElement("div", { className: "flex min-w-0 items-center gap-3" },
-                item.author_avatar
-                    ? createElement("img", { alt: item.author_name, className: "w-10 h-10 rounded-full border border-white shadow-sm object-cover", src: item.author_avatar })
-                    : createElement("div", { className: "flex w-10 h-10 rounded-full border border-white bg-primary text-white items-center justify-center font-headline-md shadow-sm" }, getAvatarFallback(item.author_name)),
+                renderUserAvatar(
+                    { avatar: item.author_avatar, nickname: item.author_name, userId: item.author_id },
+                    "w-10 h-10 rounded-full border border-white shadow-sm object-cover",
+                    { alt: item.author_name, textClassName: "text-[13px]" }
+                ),
                 createElement("div", { className: "min-w-0" },
                     createElement("a", { className: "block truncate font-headline-md text-[16px] hover:text-primary transition-colors", href: `/user/${authorId}` }, item.author_name),
                     createElement("div", { className: "text-meta-xs text-on-surface-variant flex items-center gap-2" },
@@ -338,6 +349,7 @@ function renderFeedCard(item: RecommendFeedItem) {
 
 function renderRightRail(state: RecommendFeedState) {
     const count = state.status === "ready" ? state.items.length : 0;
+    const suggestedAuthors = state.status === "ready" ? getSuggestedFeedAuthors(state.items) : [];
 
     return createElement("aside", { className: "hidden lg:block lg:col-span-3 relative" },
         createElement("div", { className: "sticky top-24 flex flex-col gap-5" },
@@ -352,13 +364,34 @@ function renderRightRail(state: RecommendFeedState) {
             createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
                 createElement("h3", { className: "font-headline-md text-[16px] text-on-surface mb-4" }, "为你推荐"),
                 createElement("div", { className: "flex flex-col gap-3" },
-                    renderSuggestedUser("2001", "Zhang Xiaolong", "产品经理"),
-                    renderSuggestedUser("2002", "Chen Zhiyuan", "界面设计师"),
-                    renderSuggestedUser("2003", "AI 前线", "科技媒体")
+                    ...(suggestedAuthors.length > 0
+                        ? suggestedAuthors.map(renderSuggestedUser)
+                        : [renderSuggestedEmptyState()])
                 )
             )
         )
     );
+}
+
+function getSuggestedFeedAuthors(items: RecommendFeedItem[]) {
+    const authors = new Map<string, SuggestedFeedAuthor>();
+
+    items.forEach((item) => {
+        const userId = cleanText(item.author_id);
+        const nickname = cleanText(item.author_name);
+        if (!userId || !nickname || authors.has(userId)) {
+            return;
+        }
+
+        authors.set(userId, {
+            userId,
+            nickname,
+            avatar: cleanText(item.author_avatar),
+            description: cleanText(item.description) || cleanText(item.title) || "创作者"
+        });
+    });
+
+    return Array.from(authors.values()).slice(0, 3);
 }
 
 function renderMetric(label: string, value: string) {
@@ -368,18 +401,50 @@ function renderMetric(label: string, value: string) {
     );
 }
 
-function renderSuggestedUser(userId: string, name: string, role: string) {
-    return createElement("div", { className: "flex items-center justify-between gap-3" },
-        createElement("div", { className: "min-w-0" },
-            createElement("div", { className: "truncate font-headline-md text-[14px]" }, name),
-            createElement("div", { className: "font-meta-xs text-on-surface-variant" }, role)
+function renderSuggestedUser(user: SuggestedFeedAuthor) {
+    return createElement("div", { className: "flex items-center justify-between gap-3", "data-suggested-user-id": user.userId, key: user.userId },
+        createElement("a", { className: "flex min-w-0 flex-1 items-center gap-3 article-anchor", href: `/user/${user.userId}` },
+            renderUserAvatar(
+                { avatar: user.avatar, nickname: user.nickname, userId: user.userId },
+                "w-10 h-10 shrink-0 rounded-full border border-white object-cover shadow-sm",
+                { alt: user.nickname, textClassName: "text-[13px]" }
+            ),
+            createElement("div", { className: "min-w-0" },
+                createElement("div", { className: "truncate font-headline-md text-[14px]" }, user.nickname),
+                createElement("div", { className: "truncate font-meta-xs text-on-surface-variant" }, user.description)
+            )
         ),
         createElement("button", {
             className: "glass-button-ghost px-4 py-1.5 rounded-full font-label-sm text-primary border-primary/20 hover:border-primary active:scale-95 transition-all duration-300",
-            "data-user-id": userId,
+            "data-user-id": user.userId,
             type: "button"
         }, "关注")
     );
+}
+
+function renderSuggestedEmptyState() {
+    return createElement("div", { className: "rounded-2xl bg-white/35 px-4 py-3 text-[13px] leading-6 text-on-surface-variant", key: "empty" }, "暂无推荐用户");
+}
+
+function renderCurrentUserAvatar(className: string, textClassName: string) {
+    const session = readAuthSession();
+    if (!session?.user) {
+        return createElement("div", { className });
+    }
+
+    return renderUserAvatar(
+        { avatar: session.user.avatar, nickname: session.user.nickname, userId: session.user.userId },
+        className,
+        { alt: "用户头像", textClassName }
+    );
+}
+
+function cleanText(value: unknown) {
+    if (typeof value === "string" || typeof value === "number") {
+        return String(value).trim();
+    }
+
+    return "";
 }
 
 function formatPublishedAt(publishedAt?: number) {
@@ -396,8 +461,4 @@ function formatPublishedAt(publishedAt?: number) {
 
 function formatCount(count?: number) {
     return String(count ?? 0);
-}
-
-function getAvatarFallback(authorName: string) {
-    return authorName.trim().charAt(0).toUpperCase() || "Z";
 }

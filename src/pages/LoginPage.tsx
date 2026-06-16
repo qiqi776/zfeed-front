@@ -5,6 +5,7 @@ import { saveAuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
 import { AuthHomeBackdrop } from "./AuthHomeBackdrop";
 import { buildAuthSiblingHref, resolveSafeAuthNextPath } from "./authNavigation";
+import { isValidMobile } from "./mobile";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 type LoginErrors = {
@@ -182,8 +183,4 @@ function renderField(
         }),
         error ? createElement("span", { className: "text-[12px] text-red-600" }, error) : null
     );
-}
-
-function isValidMobile(value: string) {
-    return /^1[3-9]\d{9}$/.test(value);
 }

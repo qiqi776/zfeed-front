@@ -2,6 +2,7 @@ import { createElement, useEffect, useState } from "react";
 import { getFollowFeed } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
+import { renderUserAvatar } from "./avatar";
 import { PageState } from "./PageState";
 
 type FollowFeedItem = {
@@ -124,7 +125,7 @@ function renderDynamicFollowingPage(items: FollowFeedItem[]) {
                         "发布"
                     ),
                     createElement("a", { "aria-label": "进入我的主页", href: "/me" },
-                        createElement("div", { className: "w-8 h-8 rounded-full border-2 border-white bg-white/50 shadow-sm" })
+                        renderCurrentUserAvatar("w-8 h-8 rounded-full border-2 border-white bg-white/50 shadow-sm object-cover cursor-pointer hover:scale-105 transition-transform duration-300 ease-out", "text-[12px]")
                     )
                 )
             ),
@@ -190,15 +191,11 @@ function renderFollowFeedCard(item: FollowFeedItem) {
         key: contentId
     },
         createElement("div", { className: "relative z-20 flex min-w-0 items-start gap-3" },
-            item.author_avatar
-                ? createElement("img", {
-                    alt: item.author_name,
-                    className: "h-11 w-11 shrink-0 rounded-full border border-white object-cover shadow-sm",
-                    src: item.author_avatar
-                })
-                : createElement("div", { className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white font-headline-md shadow-sm" },
-                    getAvatarFallback(item.author_name)
-                ),
+            renderUserAvatar(
+                { avatar: item.author_avatar, nickname: item.author_name, userId: item.author_id },
+                "h-11 w-11 shrink-0 rounded-full border border-white object-cover shadow-sm",
+                { alt: item.author_name, textClassName: "text-[14px]" }
+            ),
             createElement("div", { className: "min-w-0 flex-1" },
                 createElement("div", { className: "flex min-w-0 flex-wrap items-center gap-2" },
                     createElement("a", { className: "truncate font-headline-md text-[15px] text-on-surface hover:text-primary", href: `/user/${authorId}` }, item.author_name),
@@ -251,6 +248,19 @@ function renderFollowFeedCard(item: FollowFeedItem) {
     );
 }
 
+function renderCurrentUserAvatar(className: string, textClassName: string) {
+    const session = readAuthSession();
+    if (!session?.user) {
+        return createElement("div", { className });
+    }
+
+    return renderUserAvatar(
+        { avatar: session.user.avatar, nickname: session.user.nickname, userId: session.user.userId },
+        className,
+        { alt: "用户头像", textClassName }
+    );
+}
+
 function formatPublishedAt(publishedAt?: number) {
     if (!publishedAt) {
         return "刚刚";
@@ -265,8 +275,4 @@ function formatPublishedAt(publishedAt?: number) {
 
 function formatCount(count?: number) {
     return String(count ?? 0);
-}
-
-function getAvatarFallback(authorName: string) {
-    return authorName.trim().charAt(0).toUpperCase() || "Z";
 }

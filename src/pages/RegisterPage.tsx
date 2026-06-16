@@ -5,6 +5,7 @@ import { saveAuthSession } from "../runtime/authStore";
 import { navigateTo } from "../runtime/navigation";
 import { AuthHomeBackdrop } from "./AuthHomeBackdrop";
 import { buildAuthSiblingHref, resolveSafeAuthNextPath } from "./authNavigation";
+import { isValidMobile } from "./mobile";
 import { sharedGlassBodyClass, sharedGlassStyles } from "./sharedGlassStyles";
 
 type RegisterErrors = {
@@ -238,8 +239,4 @@ function isLikelyUrl(value: string) {
     } catch {
         return false;
     }
-}
-
-function isValidMobile(value: string) {
-    return /^1[3-9]\d{9}$/.test(value);
 }

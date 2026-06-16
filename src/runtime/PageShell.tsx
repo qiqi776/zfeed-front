@@ -147,9 +147,6 @@ function handleActionClick(event: MouseEvent) {
 
     const contentId = resolveContentId(button);
     if (!contentId) {
-        if (window.location.pathname === "/liquid-glass-feed") {
-            applyLegacyLocalActionState(button, action);
-        }
         return;
     }
     const contentUserId = resolveContentUserId(button);
@@ -260,7 +257,7 @@ function handleCommentSubmitClick(event: MouseEvent) {
     }
 
     const contentId = resolveNumericContentIdFromPath();
-    const contentUserId = resolveContentUserIdFromPath();
+    const contentUserId = button.closest<HTMLElement>("[data-content-user-id]")?.dataset.contentUserId ?? resolveContentUserIdFromPath();
     if (!contentId || !contentUserId) {
         showInlineStatus(button, "评论失败，请重试", "error");
         return;
@@ -362,7 +359,7 @@ function handleReplySubmitClick(event: MouseEvent) {
     }
 
     const contentId = resolveNumericContentIdFromPath();
-    const contentUserId = resolveContentUserIdFromPath();
+    const contentUserId = row.closest<HTMLElement>("[data-content-user-id]")?.dataset.contentUserId ?? resolveContentUserIdFromPath();
     if (!contentId || !contentUserId) {
         showInlineStatus(button, "回复失败，请重试", "error");
         return;
@@ -476,8 +473,11 @@ function handleProfileSaveClick(event: MouseEvent) {
     }
 
     const nickname = getNamedFieldValue(form, "nickname");
+    const avatar = getNamedFieldValue(form, "avatar");
     const bio = getNamedFieldValue(form, "bio");
     const email = getNamedFieldValue(form, "email");
+    const genderRaw = getNamedFieldValue(form, "gender");
+    const birthdayRaw = getNamedFieldValue(form, "birthday");
     const errors = validateProfileFields({ nickname, bio, email });
     if (errors.length > 0) {
         showFormStatus(form, errors[0], "error");
@@ -491,8 +491,11 @@ function handleProfileSaveClick(event: MouseEvent) {
 
     updateProfile({
         nickname: optionalValue(nickname),
+        avatar: optionalValue(avatar),
         bio: optionalValue(bio),
-        email: optionalValue(email)
+        email: optionalValue(email),
+        gender: optionalNumber(genderRaw),
+        birthday: optionalNumber(birthdayRaw)
     }).then(() => {
         showFormStatus(form, "资料已保存", "success");
     }).catch((error: unknown) => {
@@ -710,12 +713,12 @@ function resolveContentId(button: HTMLElement) {
     }
 
     if (window.location.pathname.startsWith("/content/")) {
-        return mapRouteIdToApiId(window.location.pathname.split("/")[2] ?? "");
+        return normalizeRouteId(window.location.pathname.split("/")[2] ?? "");
     }
 
     const container = button.closest("article, section, main") ?? document;
     const contentLink = container.querySelector<HTMLAnchorElement>('a[href^="/content/"]');
-    return mapRouteIdToApiId(contentLink?.getAttribute("href")?.split("/")[2] ?? "");
+    return normalizeRouteId(contentLink?.getAttribute("href")?.split("/")[2] ?? "");
 }
 
 function resolveContentUserId(button: HTMLElement) {
@@ -727,7 +730,7 @@ function resolveContentUserId(button: HTMLElement) {
     const container = button.closest("article, section, main") ?? document;
     const authorLink = container.querySelector<HTMLAnchorElement>('a[href^="/user/"]');
     const routeId = authorLink?.getAttribute("href")?.split("/")[2] ?? "";
-    return mapRouteIdToApiId(routeId) || resolveContentUserIdFromPath();
+    return normalizeRouteId(routeId) || resolveContentUserIdFromPath();
 }
 
 function resolveTargetUserId(button: HTMLElement) {
@@ -738,12 +741,12 @@ function resolveTargetUserId(button: HTMLElement) {
 
     const pathname = window.location.pathname;
     if (pathname.startsWith("/user/")) {
-        return mapRouteIdToApiId(pathname.split("/")[2] ?? "");
+        return normalizeRouteId(pathname.split("/")[2] ?? "");
     }
 
     const link = button.closest("section, article, aside, main")?.querySelector<HTMLAnchorElement>('a[href^="/user/"]');
     const routeId = link?.getAttribute("href")?.split("/")[2] ?? "";
-    return mapRouteIdToApiId(routeId);
+    return normalizeRouteId(routeId);
 }
 
 function resolveNumericContentIdFromPath() {
@@ -751,34 +754,19 @@ function resolveNumericContentIdFromPath() {
         return "";
     }
 
-    return mapRouteIdToApiId(window.location.pathname.split("/")[2] ?? "");
+    return normalizeRouteId(window.location.pathname.split("/")[2] ?? "");
 }
 
 function resolveContentUserIdFromPath() {
-    const contentId = window.location.pathname.split("/")[2] ?? "";
-    if (contentId.includes("video")) {
-        return "1002";
-    }
-
-    return "1001";
+    return "";
 }
 
-function mapRouteIdToApiId(routeId: string) {
-    const ids: Record<string, string> = {
-        jax: "1001",
-        lin: "1002",
-        nora: "1003",
-        article: "1001",
-        "article-1": "1001",
-        video: "1002",
-        "video-1": "1002"
-    };
-
-    if (/^\d+$/.test(routeId)) {
-        return routeId;
+function normalizeRouteId(routeId: string) {
+    try {
+        return decodeURIComponent(routeId).trim();
+    } catch {
+        return routeId.trim();
     }
-
-    return ids[routeId] ?? "";
 }
 
 function insertPendingComment(button: HTMLElement, comment: string) {
@@ -864,16 +852,19 @@ function insertPendingReply(composer: HTMLElement, comment: string) {
 }
 
 function resolveCommentMetadata(row: HTMLElement) {
-    const authorName = Array.from(row.querySelectorAll<HTMLElement>(".font-headline-md"))
+    const fallbackAuthorName = Array.from(row.querySelectorAll<HTMLElement>(".font-headline-md"))
         .map((item) => item.textContent?.trim() ?? "")
         .find(Boolean) ?? "";
-    const map: Record<string, { authorName: string; commentId: string; rootId: string; userId: string }> = {
-        "Chen Zhiyuan": { authorName: "Chen Zhiyuan", commentId: "3001", rootId: "3001", userId: "2001" },
-        "Zhang Xiaolong": { authorName: "Zhang Xiaolong", commentId: "3002", rootId: "3002", userId: "2002" },
-        "Mira Chen": { authorName: "Mira Chen", commentId: "3003", rootId: "3003", userId: "7" }
-    };
+    const authorName = row.dataset.commentAuthorName || fallbackAuthorName;
+    const commentId = row.dataset.commentId ?? "";
+    const rootId = row.dataset.rootId || commentId;
+    const userId = row.dataset.commentUserId ?? "";
 
-    return map[authorName] ?? null;
+    if (!authorName || !commentId || !rootId || !userId) {
+        return null;
+    }
+
+    return { authorName, commentId, rootId, userId };
 }
 
 function showInlineStatus(anchor: HTMLElement, message: string, type: "success" | "error") {
@@ -987,6 +978,15 @@ function optionalValue(value: string) {
     return value || undefined;
 }
 
+function optionalNumber(value: string) {
+    if (!value) {
+        return undefined;
+    }
+
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
 function captureButtonState(button: HTMLElement) {
     return {
         className: button.className,
@@ -1026,22 +1026,6 @@ function applyOptimisticState(button: HTMLElement, action: { kind: "like" | "fav
     const label = findActionLabel(button);
     if (label) {
         label.textContent = action.nextActive ? "已保存" : "收藏";
-    }
-}
-
-function applyLegacyLocalActionState(button: HTMLElement, action: { kind: "like" | "favorite"; nextActive: boolean }) {
-    if (action.kind === "like") {
-        button.classList.toggle("selected", action.nextActive);
-        return;
-    }
-
-    button.classList.toggle("bookmarked", action.nextActive);
-    const label = Array.from(button.querySelectorAll("span")).find((item) => {
-        const text = item.textContent?.trim();
-        return text === "收藏" || text === "已收藏" || text === "已保存";
-    });
-    if (label) {
-        label.textContent = action.nextActive ? "已收藏" : "收藏";
     }
 }
 

@@ -17,7 +17,6 @@ const pageComponents: Record<PageId, LazyExoticComponent<ComponentType>> = {
     settings: lazy(() => import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage }))),
     login: lazy(() => import("./pages/LoginPage").then((module) => ({ default: module.LoginPage }))),
     register: lazy(() => import("./pages/RegisterPage").then((module) => ({ default: module.RegisterPage }))),
-    "liquid-glass-feed": lazy(() => import("./pages/LiquidGlassFeedPage").then((module) => ({ default: module.LiquidGlassFeedPage }))),
     "not-found": lazy(() => import("./pages/NotFoundPage").then((module) => ({ default: module.NotFoundPage })))
 };
 
@@ -97,7 +96,6 @@ function shouldHandleInternalNavigation(event: MouseEvent, link: HTMLAnchorEleme
             url.pathname === "/compose" ||
             url.pathname === "/settings" ||
             url.pathname === "/login" ||
-            url.pathname === "/register" ||
-            url.pathname === "/liquid-glass-feed")
+            url.pathname === "/register")
     );
 }

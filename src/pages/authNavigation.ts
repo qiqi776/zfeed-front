@@ -9,7 +9,6 @@ const safeNextRoutes = new Set<PageId>([
     "search",
     "compose",
     "settings",
-    "liquid-glass-feed"
 ]);
 
 export function resolveSafeAuthNextPath(defaultPath: string) {

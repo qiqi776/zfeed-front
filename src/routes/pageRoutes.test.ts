@@ -8,7 +8,7 @@ describe("resolvePageRoute", () => {
         expect(resolvePageRoute("/me")).toBe("profile");
         expect(resolvePageRoute("/user/jax")).toBe("profile");
         expect(resolvePageRoute("/following")).toBe("following");
-        expect(resolvePageRoute("/content/article-1")).toBe("detail");
+        expect(resolvePageRoute("/content/1001")).toBe("detail");
         expect(resolvePageRoute("/content/1001/edit")).toBe("edit-content");
         expect(resolvePageRoute("/me/edit")).toBe("edit-profile");
         expect(resolvePageRoute("/search")).toBe("search");
@@ -16,7 +16,6 @@ describe("resolvePageRoute", () => {
         expect(resolvePageRoute("/settings")).toBe("settings");
         expect(resolvePageRoute("/login")).toBe("login");
         expect(resolvePageRoute("/register")).toBe("register");
-        expect(resolvePageRoute("/liquid-glass-feed")).toBe("liquid-glass-feed");
     });
 
     it("does not map old .html URLs", () => {
@@ -26,8 +25,11 @@ describe("resolvePageRoute", () => {
         expect(resolvePageRoute("/detail.html")).toBe("not-found");
         expect(resolvePageRoute("/edit-profile.html")).toBe("not-found");
         expect(resolvePageRoute("/liquid-glass-feed.html")).toBe("not-found");
+        expect(resolvePageRoute("/liquid-glass-feed")).toBe("not-found");
         expect(resolvePageRoute("/profile")).toBe("not-found");
         expect(resolvePageRoute("/detail")).toBe("not-found");
+        expect(resolvePageRoute("/content/article-1")).toBe("not-found");
+        expect(resolvePageRoute("/content/video-1")).toBe("not-found");
         expect(resolvePageRoute("/edit-profile")).toBe("not-found");
         expect(resolvePageRoute("/unknown")).toBe("not-found");
     });
