@@ -341,6 +341,103 @@ export function unfollowUser<T = unknown>(body: FollowUserBody) {
     return apiRequest<T>("/v1/interaction/followings", { method: "DELETE", body, auth: true });
 }
 
+// ---- Admin API types ----
+
+type AdminLoginBody = {
+    mobile: string;
+    password: string;
+};
+
+type AdminListUsersBody = {
+    query: string;
+    page: number;
+    page_size: number;
+    status?: number;
+    role?: number;
+};
+
+type AdminUpdateUserStatusBody = {
+    user_id: number;
+    status: number;
+};
+
+type AdminListContentsBody = {
+    query: string;
+    page: number;
+    page_size: number;
+    status?: number;
+    user_id?: number;
+};
+
+type AdminUpdateContentStatusBody = {
+    content_id: number;
+    status: number;
+};
+
+type AdminBatchContentStatusBody = {
+    content_ids: number[];
+    status: number;
+};
+
+type AdminListCommentsBody = {
+    query: string;
+    page: number;
+    page_size: number;
+    status?: number;
+    content_id?: number;
+};
+
+type AdminUpdateCommentStatusBody = {
+    comment_id: number;
+    status: number;
+};
+
+// ---- Admin API functions ----
+
+export function adminLogin<T>(body: AdminLoginBody) {
+    return apiRequest<T>("/v1/admin/login", { method: "POST", body });
+}
+
+export function adminDashboard<T>() {
+    return apiRequest<T>("/v1/admin/dashboard", { method: "POST", auth: true });
+}
+
+export function adminListUsers<T>(body: AdminListUsersBody) {
+    return apiRequest<T>("/v1/admin/users/list", { method: "POST", body, auth: true });
+}
+
+export function adminUpdateUserStatus<T>(body: AdminUpdateUserStatusBody) {
+    return apiRequest<T>("/v1/admin/users/status", { method: "POST", body, auth: true });
+}
+
+export function adminListContents<T>(body: AdminListContentsBody) {
+    return apiRequest<T>("/v1/admin/contents/list", { method: "POST", body, auth: true });
+}
+
+export function adminUpdateContentStatus<T>(body: AdminUpdateContentStatusBody) {
+    return apiRequest<T>("/v1/admin/contents/status", { method: "POST", body, auth: true });
+}
+
+export function adminBatchContentStatus<T>(body: AdminBatchContentStatusBody) {
+    return apiRequest<T>("/v1/admin/contents/batch-status", { method: "POST", body, auth: true });
+}
+
+export function adminListComments<T>(body: AdminListCommentsBody) {
+    return apiRequest<T>("/v1/admin/comments/list", { method: "POST", body, auth: true });
+}
+
+export function adminUpdateCommentStatus<T>(body: AdminUpdateCommentStatusBody) {
+    return apiRequest<T>("/v1/admin/comments/status", { method: "POST", body, auth: true });
+}
+
+export function adminGetSettings<T>() {
+    return apiRequest<T>("/v1/admin/settings", { method: "POST", auth: true });
+}
+
+export function adminUpdateSettings<T>(body: { settings: Record<string, string> }) {
+    return apiRequest<T>("/v1/admin/settings/update", { method: "POST", body, auth: true });
+}
+
 function toContentActionPayload(body: ContentActionBody, includeContentUser = false) {
     return {
         content_id: body.contentId,
