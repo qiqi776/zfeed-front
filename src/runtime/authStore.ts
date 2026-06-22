@@ -2,6 +2,7 @@ export type AuthUser = {
     userId: number;
     nickname?: string;
     avatar?: string;
+    role?: number;
 };
 
 export type AuthSession = {
@@ -11,6 +12,16 @@ export type AuthSession = {
 };
 
 export const authSessionStorageKey = "zfeed.auth.session";
+
+export function isAdmin(): boolean {
+    const session = readAuthSession();
+    return (session?.user?.role ?? 0) >= 1;
+}
+
+export function getAdminRole(): number {
+    const session = readAuthSession();
+    return session?.user?.role ?? 0;
+}
 
 export function readAuthSession(): AuthSession | null {
     const rawSession = window.localStorage.getItem(authSessionStorageKey);
