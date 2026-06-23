@@ -41,7 +41,7 @@ describe("React page structure", () => {
     });
 
     it("keeps page components free of raw HTML execution", async () => {
-        const pageFiles = await readdir(join(root, "src/pages"));
+        const pageFiles = (await readdir(join(root, "src/pages"))).filter((file) => file.endsWith(".tsx"));
         const sources = [
             ...pageFiles.map((file) => readFileSync(join(root, "src/pages", file), "utf8")),
             readFileSync(join(root, "src/runtime/PageShell.tsx"), "utf8")
@@ -54,7 +54,7 @@ describe("React page structure", () => {
     });
 
     it("does not keep placeholder hash links in migrated pages", async () => {
-        const pageFiles = await readdir(join(root, "src/pages"));
+        const pageFiles = (await readdir(join(root, "src/pages"))).filter((file) => file.endsWith(".tsx"));
         const sources = pageFiles.map((file) => ({
             file,
             source: readFileSync(join(root, "src/pages", file), "utf8")

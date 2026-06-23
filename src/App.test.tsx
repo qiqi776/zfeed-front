@@ -130,6 +130,37 @@ function userPublishedFeedPayload(items: unknown[] = [defaultRecommendFeedItem({
     };
 }
 
+function userFavoriteFeedPayload(items: unknown[] = [defaultRecommendFeedItem({
+    content_id: 9201,
+    author_id: 1002,
+    author_name: "收藏作者",
+    title: "我的真实收藏内容",
+    description: "这条内容来自我的收藏流接口。",
+    like_count: 19,
+    favorite_count: 7,
+    comment_count: 3
+})]) {
+    return {
+        items,
+        next_cursor: "",
+        has_more: false
+    };
+}
+
+function userFollowersPayload(items: unknown[] = [{
+    user_id: 3001,
+    nickname: "粉丝用户",
+    avatar: "3",
+    bio: "关注我的用户",
+    is_following: false
+}]) {
+    return {
+        items,
+        next_cursor: 0,
+        has_more: false
+    };
+}
+
 function contentDetailPayload(overrides: Record<string, unknown> = {}) {
     return {
         detail: {
@@ -187,6 +218,18 @@ function isContentDetailRequest(input: RequestInfo | URL) {
 
 function isCommentListRequest(input: RequestInfo | URL) {
     return input === "/v1/interaction/comment/list";
+}
+
+function respondToProfileListRequest(input: RequestInfo | URL) {
+    if (input === "/v1/feed/user/favorite") {
+        return jsonResponse(userFavoriteFeedPayload([]));
+    }
+
+    if (input === "/v1/user/followers") {
+        return jsonResponse(userFollowersPayload([]));
+    }
+
+    return null;
 }
 
 describe("App routes", () => {
@@ -591,6 +634,11 @@ describe("App routes", () => {
                 return jsonResponse(userPublishedFeedPayload([]));
             }
 
+            const listResponse = respondToProfileListRequest(input);
+            if (listResponse) {
+                return listResponse;
+            }
+
             return jsonResponse({});
         });
         vi.stubGlobal("fetch", fetchMock);
@@ -637,6 +685,11 @@ describe("App routes", () => {
                 return jsonResponse(userPublishedFeedPayload([]));
             }
 
+            const listResponse = respondToProfileListRequest(input);
+            if (listResponse) {
+                return listResponse;
+            }
+
             return jsonResponse({});
         });
         vi.stubGlobal("fetch", fetchMock);
@@ -672,6 +725,11 @@ describe("App routes", () => {
                 ]));
             }
 
+            const listResponse = respondToProfileListRequest(input);
+            if (listResponse) {
+                return listResponse;
+            }
+
             return jsonResponse({});
         });
         vi.stubGlobal("fetch", fetchMock);
@@ -689,6 +747,76 @@ describe("App routes", () => {
             body: JSON.stringify({ user_id: "7", cursor: "", page_size: 20 })
         }));
         expect(screen.queryByText("个人发布流会在后续接入 `/v1/feed/user/publish`。")).not.toBeInTheDocument();
+    });
+
+    it("uses the profile stat row to switch favorites and followers while followings stays display-only", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "me-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/users/me") {
+                return jsonResponse(meProfilePayload());
+            }
+
+            if (input === "/v1/feed/user/publish") {
+                return jsonResponse(userPublishedFeedPayload([
+                    defaultRecommendFeedItem({
+                        content_id: 7701,
+                        author_id: 7,
+                        author_name: "Mira Chen",
+                        title: "我的真实发布内容",
+                        description: "这条内容来自我的发布流接口。"
+                    })
+                ]));
+            }
+
+            if (input === "/v1/feed/user/favorite") {
+                return jsonResponse(userFavoriteFeedPayload());
+            }
+
+            if (input === "/v1/user/followers") {
+                return jsonResponse(userFollowersPayload());
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/me");
+
+        render(<App />);
+
+        expect(screen.queryByRole("tablist", { name: "个人主页内容" })).not.toBeInTheDocument();
+        expect(await screen.findByRole("button", { name: "128 动态" })).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", { name: "912 收藏" })).toHaveAttribute("aria-pressed", "false");
+        expect(screen.getByRole("button", { name: "18600 粉丝" })).toHaveAttribute("aria-pressed", "false");
+        expect(screen.queryByRole("button", { name: "346 关注" })).not.toBeInTheDocument();
+        expect(screen.getByText("346").closest("button")).toBeNull();
+
+        fireEvent.click(screen.getByRole("button", { name: "912 收藏" }));
+        expect(await screen.findByRole("heading", { name: "我的真实收藏内容" })).toBeInTheDocument();
+        expect(screen.getByText("这条内容来自我的收藏流接口。")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("button", { name: "18600 粉丝" }));
+        expect(await screen.findByText("粉丝用户")).toBeInTheDocument();
+        expect(screen.getByText("关注我的用户")).toBeInTheDocument();
+
+        expect(fetchMock).toHaveBeenCalledWith("/v1/feed/user/favorite", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer me-token"
+            }),
+            body: JSON.stringify({ user_id: "7", cursor: "", page_size: 20 })
+        }));
+        expect(fetchMock).toHaveBeenCalledWith("/v1/user/followers", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer me-token"
+            }),
+            body: JSON.stringify({ user_id: "7", cursor: 0, page_size: 20 })
+        }));
+        expect(fetchMock).not.toHaveBeenCalledWith("/v1/user/followings", expect.any(Object));
     });
 
     it("shows an auth-required state on me when signed out", async () => {
@@ -2187,6 +2315,10 @@ describe("App routes", () => {
             if (input === "/v1/feed/user/publish") {
                 return Promise.resolve(jsonResponse(userPublishedFeedPayload()));
             }
+            const listResponse = respondToProfileListRequest(input);
+            if (listResponse) {
+                return Promise.resolve(listResponse);
+            }
 
             return new Promise<Response>((resolve) => {
                 resolveFollow = resolve;
@@ -2201,7 +2333,7 @@ describe("App routes", () => {
         fireEvent.click(followButton);
 
         expect(await screen.findByRole("button", { name: "已关注" })).toBeDisabled();
-        expect(fetchMock).toHaveBeenCalledTimes(3);
+        expect(fetchMock).toHaveBeenCalledTimes(5);
 
         resolveFollow(jsonResponse({ is_followed: true }));
         await waitFor(() => expect(followButton).not.toBeDisabled());

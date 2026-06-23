@@ -1,5 +1,5 @@
 import { createElement, useEffect, useState } from "react";
-import { ApiError, getMe, getUserProfile, getUserPublishedFeed } from "../runtime/apiClient";
+import { ApiError, getMe, getUserFavoriteFeed, getUserFollowers, getUserProfile, getUserPublishedFeed } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
 import { renderUserAvatar } from "./avatar";
@@ -99,6 +99,36 @@ type UserPublishedFeedState =
     | { status: "empty" }
     | { status: "error" };
 
+type ProfileContentListKind = "published" | "favorites";
+
+type ProfileRelationItem = {
+    user_id: string | number;
+    nickname: string;
+    avatar?: string;
+    bio?: string;
+    is_following?: boolean;
+};
+
+type ProfileRelationResponse = {
+    items?: ProfileRelationItem[];
+};
+
+type ProfileRelationState =
+    | { status: "loading" }
+    | { status: "ready"; items: ProfileRelationItem[] }
+    | { status: "empty" }
+    | { status: "error" };
+
+type ProfileTab = "published" | "favorites" | "followers";
+
+type ProfileTabsState = {
+    activeTab: ProfileTab;
+    setActiveTab: (tab: ProfileTab) => void;
+    publishedFeed: UserPublishedFeedState;
+    favoriteFeed: UserPublishedFeedState;
+    followers: ProfileRelationState;
+};
+
 const styles = "/* Liquid Glass Utility Classes */\r\n        .glass-panel {\r\n            background: rgba(255, 255, 255, 0.4);\r\n            backdrop-filter: blur(40px);\r\n            -webkit-backdrop-filter: blur(40px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            border-top: 1px solid rgba(255, 255, 255, 0.8); /* Specular highlight */\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), \r\n                        0 4px 20px rgba(0, 0, 0, 0.05);\r\n        }\r\n        \r\n        .glass-input {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            backdrop-filter: blur(20px);\r\n            border: 1px solid rgba(255, 255, 255, 0.7);\r\n            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-input:focus {\n            outline: none;\n            border-color: var(--color-primary, #1f53c9);\n            box-shadow: 0 0 0 2px rgba(31, 83, 201, 0.2), inset 0 1px 3px rgba(0,0,0,0.02);\n        }\n\n        .search-shell {\n            border-radius: 9999px;\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease-out;\n        }\n\n        .search-shell:hover,\n        .search-shell:focus-within {\n            transform: translateY(-2px);\n            filter: drop-shadow(0 10px 22px rgba(31, 83, 201, 0.14));\n        }\n\n        .search-shell .glass-input {\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75), 0 4px 16px rgba(0, 0, 0, 0.04);\n        }\n\n        .search-shell:hover .glass-input {\n            background: rgba(255, 255, 255, 0.62);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .search-shell:focus-within .glass-input {\n            background: rgba(255, 255, 255, 0.72);\n            border-color: rgba(31, 83, 201, 0.55);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 10px 28px rgba(31, 83, 201, 0.16);\n        }\n\n        .search-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .search-shell:hover::after,\n        .search-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell {\n            position: relative;\n            flex: 1;\n            overflow: hidden;\n            border-radius: 1.25rem;\n            background: rgba(255, 255, 255, 0.34);\n            backdrop-filter: blur(18px);\n            -webkit-backdrop-filter: blur(18px);\n            border: 1px solid rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.72), 0 4px 16px rgba(0, 0, 0, 0.035);\n            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;\n        }\n\n        .composer-shell:hover,\n        .composer-shell:focus-within {\n            transform: translateY(-2px);\n            background: rgba(255, 255, 255, 0.58);\n            border-color: rgba(255, 255, 255, 0.9);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 10px 28px rgba(31, 83, 201, 0.12);\n        }\n\n        .composer-shell:focus-within {\n            border-color: rgba(31, 83, 201, 0.50);\n            box-shadow: 0 0 0 3px rgba(31, 83, 201, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 12px 30px rgba(31, 83, 201, 0.16);\n        }\n\n        .composer-shell::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n            z-index: 10;\n        }\n\n        .composer-shell:hover::after,\n        .composer-shell:focus-within::after {\n            left: 160%;\n        }\n\n        .composer-shell input {\n            position: relative;\n            z-index: 20;\n            min-height: 44px;\n            padding: 0.65rem 0.95rem;\n        }\n\n        .composer-shell input:focus {\n            outline: none;\n            box-shadow: none;\n        }\n\n        .top-channel {\n            position: relative;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            overflow: hidden;\n            min-height: 34px;\n            padding: 0 12px;\n            border-radius: 9999px;\n            color: var(--color-on-surface-variant, #434654);\n            font-weight: 600;\n            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease-out, background 0.25s ease-out, box-shadow 0.25s ease-out;\n        }\n\n        .top-channel::after {\n            content: '';\n            position: absolute;\n            top: 0;\n            left: -140%;\n            width: 42%;\n            height: 100%;\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);\n            transform: skewX(-25deg);\n            transition: left 0.65s ease;\n            pointer-events: none;\n        }\n\n        .top-channel:hover {\n            transform: translateY(-2px);\n            color: var(--color-primary, #1f53c9);\n            background: rgba(255, 255, 255, 0.62);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel.active {\n            color: var(--color-primary, #1f53c9);\n            background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(236, 244, 255, 0.62));\n            backdrop-filter: blur(20px) saturate(1.25);\n            -webkit-backdrop-filter: blur(20px) saturate(1.25);\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(31, 83, 201, 0.12), 0 10px 24px rgba(31, 83, 201, 0.10);\n        }\n\n        .top-channel:hover::after,\n        .top-channel.active::after {\n            left: 160%;\n        }\n\n        .top-channel:active {\n            transform: translateY(-1px) scale(0.97);\n        }\n\n        .top-icon-btn {\n            width: 40px;\n            height: 40px;\n            display: inline-flex;\n            align-items: center;\n            justify-content: center;\n            transform: translateY(2px);\n            background: rgba(255, 255, 255, 0.16);\n            border: 1px solid rgba(255, 255, 255, 0.22);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.45);\n        }\n\n        .top-icon-btn:hover {\n            transform: translateY(0);\n            background: rgba(255, 255, 255, 0.42);\n            box-shadow: inset 0 1px 1px rgba(255,255,255,0.70), 0 8px 18px rgba(31, 83, 201, 0.10);\n        }\n\n        .glass-button-primary {\n            background: linear-gradient(135deg, rgba(64, 109, 228, 0.9) 0%, rgba(31, 83, 201, 0.9) 100%);\r\n            backdrop-filter: blur(10px);\r\n            box-shadow: 0 4px 15px rgba(31, 83, 201, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);\r\n            border: 1px solid rgba(255, 255, 255, 0.2);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n        \r\n        .glass-button-primary:hover {\r\n            transform: translateY(-1px);\r\n            box-shadow: 0 6px 20px rgba(31, 83, 201, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);\r\n        }\r\n\r\n        .glass-button-ghost {\r\n            background: rgba(255, 255, 255, 0.3);\r\n            backdrop-filter: blur(10px);\r\n            border: 1px solid rgba(255, 255, 255, 0.6);\r\n            transition: all 0.3s ease-out;\r\n        }\r\n\r\n        .glass-button-ghost:hover {\r\n            background: rgba(255, 255, 255, 0.5);\r\n            border-color: rgba(255, 255, 255, 0.8);\r\n        }\r\n\r\n        /* Hover Lift and Shine Effects */\r\n        .hover-lift {\r\n            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\r\n        }\r\n        .hover-lift:hover {\r\n            transform: translateY(-4px);\r\n            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 12px 30px rgba(0, 0, 0, 0.08);\r\n            border-color: rgba(255, 255, 255, 0.9);\r\n        }\r\n\r\n        .shine-effect {\r\n            position: relative;\r\n            overflow: hidden;\r\n        }\r\n        .shine-effect::after {\r\n            content: '';\r\n            position: absolute;\r\n            top: 0;\r\n            left: -150%;\r\n            width: 50%;\r\n            height: 100%;\r\n            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);\r\n            transform: skewX(-25deg);\r\n            transition: left 0.7s ease;\r\n            z-index: 10;\r\n            pointer-events: none;\r\n        }\r\n        .shine-effect:hover::after {\r\n            left: 200%;\r\n        }\r\n\r\n        /* Ambient Background */\r\n        body {\n            background-color: #eef2f6;\n            background-image: \n                radial-gradient(circle at 15% 50%, rgba(180, 197, 255, 0.4) 0%, transparent 50%),\n                radial-gradient(circle at 85% 30%, rgba(219, 226, 250, 0.5) 0%, transparent 50%);\n            background-attachment: fixed;\n            min-height: 100vh;\n        }\n\n        .feed-transition {\n            opacity: 0;\n            transform: translateY(8px) scale(0.995);\n            filter: blur(8px);\n            transition:\n                opacity 0.28s ease,\n                transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),\n                filter 0.34s ease;\n        }\n\n        .feed-transition.feed-ready {\n            opacity: 1;\n            transform: none;\n            filter: none;\n        }\n\n        .feed-transition.feed-leaving {\n            opacity: 0;\n            transform: translateY(6px) scale(0.996);\n            filter: blur(7px);\n            pointer-events: none;\n        }\n\n        @media (prefers-reduced-motion: reduce) {\n            .feed-transition,\n            .feed-transition.feed-ready,\n            .feed-transition.feed-leaving {\n                opacity: 1;\n                transform: none;\n                filter: none;\n                transition: none;\n            }\n        }\n\n        .chart-glow-line {\n            filter: drop-shadow(0 4px 6px rgba(31, 83, 201, 0.2));\n        }\n\r\n        .nav-link-hover {\r\n            transition: all 0.2s ease-out;\r\n        }\r\n        .nav-link-hover:hover {\n            background: rgba(255, 255, 255, 0.4);\n            border-radius: 0.75rem;\n        }\n\n        .profile-tab {\n            position: relative;\n            border: 1px solid transparent;\n            background: transparent;\n            color: rgba(67, 70, 84, 0.92);\n            font-weight: 700;\n            transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;\n        }\n\n        .profile-tab::after {\n            content: \"\";\n            position: absolute;\n            left: 1rem;\n            right: 1rem;\n            bottom: 0;\n            height: 2px;\n            border-radius: 999px;\n            background: transparent;\n            transition: all 0.28s ease;\n        }\n\n        .profile-tab.active,\n        .profile-tab:hover {\n            color: var(--color-primary, #1f53c9);\n            background: rgba(255, 255, 255, 0.54);\n            border: 1px solid rgba(255, 255, 255, 0.38);\n            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28);\n            transform: none;\n        }\n\n        .profile-tab.active::after,\n        .profile-tab:hover::after {\n            background: transparent;\n        }\n\n        .profile-stat-line {\n            color: rgba(67, 70, 84, 0.92);\n        }\n\n        .profile-stat-line strong {\n            color: #191c1e;\n            font-family: \"Hanken Grotesk\", sans-serif;\n            font-size: 17px;\n            font-weight: 700;\n        }";
 
 const profileHtmlClass = "light";
@@ -117,6 +147,9 @@ export function ProfilePage() {
 function MeProfilePage() {
     const [state, setState] = useState<MeProfileState>(() => readAuthSession() ? { status: "loading" } : { status: "auth-required" });
     const [publishedFeed, setPublishedFeed] = useState<UserPublishedFeedState>({ status: "loading" });
+    const [favoriteFeed, setFavoriteFeed] = useState<UserPublishedFeedState>({ status: "loading" });
+    const [followers, setFollowers] = useState<ProfileRelationState>({ status: "loading" });
+    const [activeTab, setActiveTab] = useState<ProfileTab>("published");
 
     useEffect(() => {
         if (!readAuthSession()) {
@@ -136,23 +169,16 @@ function MeProfilePage() {
 
                 if (!profile.userId) {
                     setPublishedFeed({ status: "error" });
+                    setFavoriteFeed({ status: "error" });
+                    setFollowers({ status: "error" });
                     return;
                 }
 
-                getUserPublishedFeed<UserPublishedFeedResponse>({ user_id: profile.userId, cursor: "", page_size: 20 })
-                    .then((feedResponse) => {
-                        if (!isCurrent) {
-                            return;
-                        }
-
-                        const items = feedResponse.items ?? [];
-                        setPublishedFeed(items.length > 0 ? { status: "ready", items } : { status: "empty" });
-                    })
-                    .catch(() => {
-                        if (isCurrent) {
-                            setPublishedFeed({ status: "error" });
-                        }
-                    });
+                loadProfileLists(profile.userId, () => isCurrent, {
+                    setPublishedFeed,
+                    setFavoriteFeed,
+                    setFollowers
+                });
             })
             .catch(() => {
                 if (!isCurrent) {
@@ -171,12 +197,21 @@ function MeProfilePage() {
         return renderMeStatePage(state);
     }
 
-    return renderMeReadyPage(state.profile, publishedFeed);
+    return renderMeReadyPage(state.profile, {
+        activeTab,
+        setActiveTab,
+        publishedFeed,
+        favoriteFeed,
+        followers
+    });
 }
 
 function UserProfilePage({ routeUserId }: { routeUserId: string }) {
     const [state, setState] = useState<UserProfileState>({ status: "loading" });
     const [publishedFeed, setPublishedFeed] = useState<UserPublishedFeedState>({ status: "loading" });
+    const [favoriteFeed, setFavoriteFeed] = useState<UserPublishedFeedState>({ status: "loading" });
+    const [followers, setFollowers] = useState<ProfileRelationState>({ status: "loading" });
+    const [activeTab, setActiveTab] = useState<ProfileTab>("published");
 
     useEffect(() => {
         let isCurrent = true;
@@ -190,20 +225,11 @@ function UserProfilePage({ routeUserId }: { routeUserId: string }) {
                 const profile = normalizeUserProfile(response, routeUserId);
                 setState({ status: "ready", profile });
 
-                return getUserPublishedFeed<UserPublishedFeedResponse>({ user_id: profile.userId, cursor: "", page_size: 20 })
-                    .then((feedResponse) => {
-                        if (!isCurrent) {
-                            return;
-                        }
-
-                        const items = feedResponse.items ?? [];
-                        setPublishedFeed(items.length > 0 ? { status: "ready", items } : { status: "empty" });
-                    })
-                    .catch(() => {
-                        if (isCurrent) {
-                            setPublishedFeed({ status: "error" });
-                        }
-                    });
+                loadProfileLists(profile.userId, () => isCurrent, {
+                    setPublishedFeed,
+                    setFavoriteFeed,
+                    setFollowers
+                });
             })
             .catch((error: unknown) => {
                 if (!isCurrent) {
@@ -222,7 +248,72 @@ function UserProfilePage({ routeUserId }: { routeUserId: string }) {
         return renderUserStatePage(state);
     }
 
-    return renderUserReadyPage(state.profile, publishedFeed);
+    return renderUserReadyPage(state.profile, {
+        activeTab,
+        setActiveTab,
+        publishedFeed,
+        favoriteFeed,
+        followers
+    });
+}
+
+function loadProfileLists(
+    userId: string,
+    isCurrent: () => boolean,
+    setters: {
+        setPublishedFeed: (state: UserPublishedFeedState) => void;
+        setFavoriteFeed: (state: UserPublishedFeedState) => void;
+        setFollowers: (state: ProfileRelationState) => void;
+    }
+) {
+    getUserPublishedFeed<UserPublishedFeedResponse>({ user_id: userId, cursor: "", page_size: 20 })
+        .then((feedResponse) => {
+            if (!isCurrent()) {
+                return;
+            }
+            setters.setPublishedFeed(toContentListState(feedResponse));
+        })
+        .catch(() => {
+            if (isCurrent()) {
+                setters.setPublishedFeed({ status: "error" });
+            }
+        });
+
+    getUserFavoriteFeed<UserPublishedFeedResponse>({ user_id: userId, cursor: "", page_size: 20 })
+        .then((feedResponse) => {
+            if (!isCurrent()) {
+                return;
+            }
+            setters.setFavoriteFeed(toContentListState(feedResponse));
+        })
+        .catch(() => {
+            if (isCurrent()) {
+                setters.setFavoriteFeed({ status: "error" });
+            }
+        });
+
+    getUserFollowers<ProfileRelationResponse>({ user_id: userId, cursor: 0, page_size: 20 })
+        .then((response) => {
+            if (!isCurrent()) {
+                return;
+            }
+            setters.setFollowers(toRelationListState(response));
+        })
+        .catch(() => {
+            if (isCurrent()) {
+                setters.setFollowers({ status: "error" });
+            }
+        });
+}
+
+function toContentListState(response: UserPublishedFeedResponse): UserPublishedFeedState {
+    const items = response.items ?? [];
+    return items.length > 0 ? { status: "ready", items } : { status: "empty" };
+}
+
+function toRelationListState(response: ProfileRelationResponse): ProfileRelationState {
+    const items = response.items ?? [];
+    return items.length > 0 ? { status: "ready", items } : { status: "empty" };
 }
 
 function renderUserStatePage(state: Exclude<UserProfileState, { status: "ready" }>) {
@@ -242,7 +333,7 @@ function renderUserStatePage(state: Exclude<UserProfileState, { status: "ready" 
     );
 }
 
-function renderUserReadyPage(profile: UserProfile, publishedFeed: UserPublishedFeedState) {
+function renderUserReadyPage(profile: UserProfile, tabs: ProfileTabsState) {
     return createElement(
         PageShell,
         { title: `zfeed - ${profile.nickname}`, htmlClass: profileHtmlClass, bodyClass: profileBodyClass, styles },
@@ -275,39 +366,15 @@ function renderUserReadyPage(profile: UserProfile, publishedFeed: UserPublishedF
                                     )
                                 ),
                                 createElement("p", { className: "break-words font-body-md text-on-surface-variant mt-2" }, profile.bio),
-                                renderMeStats(profile)
+                                renderMeStats(profile, tabs)
                             )
                         ),
-                        renderUserPublishedFeed(publishedFeed)
+                        renderProfileTabs(tabs, false)
                     ),
                     renderMeRightRail(profile)
                 )
             )
         )
-    );
-}
-
-function renderUserPublishedFeed(state: UserPublishedFeedState) {
-    if (state.status !== "ready") {
-        return createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
-            createElement("div", { className: "flex items-center justify-between gap-4" },
-                createElement("div", null,
-                    createElement("h2", { className: "font-headline-md text-on-surface" }, "发布内容"),
-                    createElement(PageState, getUserPublishedFeedStateView(state.status))
-                ),
-                state.status === "empty"
-                    ? createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/search" }, "继续探索")
-                    : null
-            )
-        );
-    }
-
-    return createElement("section", { className: "flex flex-col gap-4" },
-        createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
-            createElement("h2", { className: "font-headline-md text-on-surface" }, "发布内容"),
-            createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "创作者公开发布的内容。")
-        ),
-        ...state.items.map(renderUserPublishedCard)
     );
 }
 
@@ -377,6 +444,115 @@ function renderUserPublishedCard(item: UserPublishedFeedItem) {
     );
 }
 
+function renderProfileTabs(tabs: ProfileTabsState, isMe: boolean) {
+    return renderProfileTabPanel(tabs, isMe);
+}
+
+function renderProfileTabPanel(tabs: ProfileTabsState, isMe: boolean) {
+    if (tabs.activeTab === "favorites") {
+        return renderProfileContentList(tabs.favoriteFeed, "favorites", isMe);
+    }
+    if (tabs.activeTab === "followers") {
+        return renderProfileRelationList(tabs.followers);
+    }
+    return renderProfileContentList(tabs.publishedFeed, "published", isMe);
+}
+
+function renderProfileContentList(state: UserPublishedFeedState, kind: ProfileContentListKind, isMe: boolean) {
+    if (state.status !== "ready") {
+        return createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect", role: "tabpanel" },
+            createElement("div", { className: "flex items-center justify-between gap-4" },
+                createElement("div", null,
+                    createElement("h2", { className: "font-headline-md text-on-surface" }, getProfileContentTitle(kind, isMe)),
+                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, getProfileContentDescription(kind, isMe))
+                ),
+                renderProfileContentAction(state, kind, isMe)
+            ),
+            createElement(PageState, getProfileContentStateView(state.status, kind, isMe))
+        );
+    }
+
+    return createElement("section", { className: "flex flex-col gap-4", role: "tabpanel" },
+        createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+            createElement("div", { className: "flex items-center justify-between gap-4" },
+                createElement("div", null,
+                    createElement("h2", { className: "font-headline-md text-on-surface" }, getProfileContentTitle(kind, isMe)),
+                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, getProfileContentDescription(kind, isMe))
+                ),
+                renderProfileContentAction(state, kind, isMe)
+            )
+        ),
+        ...state.items.map(renderUserPublishedCard)
+    );
+}
+
+function renderProfileContentAction(state: UserPublishedFeedState, kind: ProfileContentListKind, isMe: boolean) {
+    if (kind === "published" && isMe) {
+        return createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/compose" }, "去发布");
+    }
+    if (state.status === "empty") {
+        return createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/search" }, "继续探索");
+    }
+    return null;
+}
+
+function renderProfileRelationList(state: ProfileRelationState) {
+    if (state.status !== "ready") {
+        return createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect", role: "tabpanel" },
+            createElement("h2", { className: "font-headline-md text-on-surface" }, "粉丝"),
+            createElement(PageState, getProfileRelationStateView(state.status))
+        );
+    }
+
+    return createElement("section", { className: "flex flex-col gap-3", role: "tabpanel" },
+        createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
+            createElement("h2", { className: "font-headline-md text-on-surface" }, "粉丝"),
+            createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "关注这个用户的人。")
+        ),
+        ...state.items.map(renderProfileRelationCard)
+    );
+}
+
+function renderProfileRelationCard(item: ProfileRelationItem) {
+    const userId = String(item.user_id);
+    const nickname = item.nickname || `用户 ${userId}`;
+
+    return createElement("article", { className: "glass-panel hover-lift shine-effect rounded-3xl p-5", key: userId },
+        createElement("div", { className: "relative z-20 flex min-w-0 items-center justify-between gap-4" },
+            createElement("a", { className: "flex min-w-0 items-center gap-3", href: `/user/${userId}` },
+                renderUserAvatar(
+                    { avatar: item.avatar, nickname, userId },
+                    "h-12 w-12 shrink-0 rounded-full border border-white object-cover shadow-sm",
+                    { alt: nickname, textClassName: "text-[15px]" }
+                ),
+                createElement("span", { className: "min-w-0" },
+                    createElement("span", { className: "block truncate font-headline-md text-[15px] text-on-surface" }, nickname),
+                    createElement("span", { className: "mt-1 block line-clamp-2 break-words text-[13px] leading-5 text-on-surface-variant" }, item.bio || "这个用户还没有填写简介。")
+                )
+            ),
+            createElement("button", {
+                className: `glass-button-ghost rounded-full px-4 py-2 font-label-sm active:scale-95 transition-all duration-300 ${item.is_following ? "text-on-surface-variant" : "text-primary"}`,
+                "data-user-id": userId,
+                type: "button"
+            }, item.is_following ? "已关注" : "关注")
+        )
+    );
+}
+
+function getProfileContentTitle(kind: ProfileContentListKind, isMe: boolean) {
+    if (kind === "favorites") {
+        return isMe ? "我的收藏" : "收藏内容";
+    }
+    return isMe ? "最近动态" : "发布内容";
+}
+
+function getProfileContentDescription(kind: ProfileContentListKind, isMe: boolean) {
+    if (kind === "favorites") {
+        return isMe ? "你收藏的公开内容。" : "这个用户收藏的公开内容。";
+    }
+    return isMe ? "你的公开发布内容。" : "创作者公开发布的内容。";
+}
+
 function renderUserHeader(profile: UserProfile) {
     return createElement("header", { className: "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
         createElement("div", { className: "flex items-center gap-4" },
@@ -422,7 +598,7 @@ function renderMeStatePage(state: Exclude<MeProfileState, { status: "ready" }>) 
     );
 }
 
-function renderMeReadyPage(profile: MeProfile, publishedFeed: UserPublishedFeedState) {
+function renderMeReadyPage(profile: MeProfile, tabs: ProfileTabsState) {
     return createElement(
         PageShell,
         { title: `zfeed - ${profile.nickname}`, htmlClass: profileHtmlClass, bodyClass: profileBodyClass, styles },
@@ -458,45 +634,15 @@ function renderMeReadyPage(profile: MeProfile, publishedFeed: UserPublishedFeedS
                                     )
                                 ),
                                 createElement("p", { className: "break-words font-body-md text-on-surface-variant mt-2" }, profile.bio),
-                                renderMeStats(profile)
+                                renderMeStats(profile, tabs)
                             )
                         ),
-                        renderMePublishedFeed(publishedFeed)
+                        renderProfileTabs(tabs, true)
                     ),
                     renderMeRightRail(profile)
                 )
             )
         )
-    );
-}
-
-function renderMePublishedFeed(state: UserPublishedFeedState) {
-    if (state.status !== "ready") {
-        return createElement("section", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
-            createElement("div", { className: "flex items-center justify-between gap-4" },
-                createElement("div", null,
-                    createElement("h2", { className: "font-headline-md text-on-surface" }, "最近动态"),
-                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "你的公开发布内容会显示在这里。")
-                ),
-                state.status === "empty"
-                    ? createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/compose" }, "去发布")
-                    : null
-            ),
-            createElement(PageState, getUserPublishedFeedStateView(state.status))
-        );
-    }
-
-    return createElement("section", { className: "flex flex-col gap-4" },
-        createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
-            createElement("div", { className: "flex items-center justify-between gap-4" },
-                createElement("div", null,
-                    createElement("h2", { className: "font-headline-md text-on-surface" }, "最近动态"),
-                    createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "你的公开发布内容。")
-                ),
-                createElement("a", { className: "glass-button-ghost rounded-full px-4 py-2 text-primary font-label-sm active:scale-95", href: "/compose" }, "去发布")
-            )
-        ),
-        ...state.items.map(renderUserPublishedCard)
     );
 }
 
@@ -549,17 +695,30 @@ function renderMeRailLink(href: string, icon: string, label: string) {
     );
 }
 
-function renderMeStats(profile: MeProfile) {
+function renderMeStats(profile: MeProfile, tabs: ProfileTabsState) {
     return createElement("div", { className: "profile-stat-line flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 font-label-sm" },
-        renderMeStat(profile.contentCount, "动态"),
+        renderMeStatButton(profile.contentCount, "动态", "published", tabs),
         createElement("span", { className: "text-outline/70" }, "·"),
         renderMeStat(profile.followeeCount, "关注"),
         createElement("span", { className: "text-outline/70" }, "·"),
-        renderMeStat(profile.followerCount, "粉丝"),
+        renderMeStatButton(profile.followerCount, "粉丝", "followers", tabs),
         createElement("span", { className: "text-outline/70" }, "·"),
         renderMeStat(profile.likeReceivedCount, "获赞"),
         createElement("span", { className: "text-outline/70" }, "·"),
-        renderMeStat(profile.favoriteReceivedCount, "收藏")
+        renderMeStatButton(profile.favoriteReceivedCount, "收藏", "favorites", tabs)
+    );
+}
+
+function renderMeStatButton(value: number, label: string, tab: ProfileTab, tabs: ProfileTabsState) {
+    const isActive = tabs.activeTab === tab;
+    return createElement("button", {
+        "aria-pressed": isActive,
+        className: `profile-tab rounded-full px-2 py-1 -mx-2 -my-1 active:scale-95 ${isActive ? "active" : ""}`,
+        onClick: () => tabs.setActiveTab(tab),
+        type: "button"
+    },
+        createElement("strong", null, formatProfileCount(value)),
+        ` ${label}`
     );
 }
 
@@ -656,20 +815,46 @@ function getUserStateView(status: Exclude<UserProfileState["status"], "ready">) 
     };
 }
 
-function getUserPublishedFeedStateView(status: Exclude<UserPublishedFeedState["status"], "ready">) {
+function getProfileContentStateView(status: Exclude<UserPublishedFeedState["status"], "ready">, kind: ProfileContentListKind, isMe: boolean) {
     if (status === "loading") {
         return {
             state: "loading" as const,
-            title: "正在加载发布内容",
-            description: "正在获取创作者公开发布的内容。"
+            title: kind === "favorites" ? "正在加载收藏内容" : "正在加载发布内容",
+            description: kind === "favorites" ? "正在获取收藏的公开内容。" : "正在获取创作者公开发布的内容。"
         };
     }
 
     if (status === "empty") {
         return {
             state: "empty" as const,
-            title: "还没有公开发布内容",
-            description: "可以继续探索其他创作者和话题。",
+            title: kind === "favorites" ? "还没有收藏内容" : "还没有公开发布内容",
+            description: kind === "favorites" ? "收藏内容后会显示在这里。" : isMe ? "发布第一条动态后会显示在这里。" : "可以继续探索其他创作者和话题。",
+            actionHref: kind === "published" && isMe ? "/compose" : "/search",
+            actionLabel: kind === "published" && isMe ? "去发布" : "去搜索"
+        };
+    }
+
+    return {
+        state: "error" as const,
+        title: kind === "favorites" ? "收藏内容加载失败" : "发布内容加载失败",
+        description: "请稍后重试。"
+    };
+}
+
+function getProfileRelationStateView(status: Exclude<ProfileRelationState["status"], "ready">) {
+    if (status === "loading") {
+        return {
+            state: "loading" as const,
+            title: "正在加载粉丝列表",
+            description: "正在获取用户关系数据。"
+        };
+    }
+
+    if (status === "empty") {
+        return {
+            state: "empty" as const,
+            title: "还没有粉丝",
+            description: "有人关注后会显示在这里。",
             actionHref: "/search",
             actionLabel: "去搜索"
         };
@@ -677,7 +862,7 @@ function getUserPublishedFeedStateView(status: Exclude<UserPublishedFeedState["s
 
     return {
         state: "error" as const,
-        title: "发布内容加载失败",
+        title: "粉丝列表加载失败",
         description: "请稍后重试。"
     };
 }

@@ -96,6 +96,18 @@ type UserPublishedFeedBody = {
     page_size: number;
 };
 
+type UserFavoriteFeedBody = {
+    user_id: string;
+    cursor: string;
+    page_size: number;
+};
+
+type UserFollowListBody = {
+    user_id: string;
+    cursor: number;
+    page_size: number;
+};
+
 type ContentDetailBody = {
     content_id: string;
 };
@@ -263,6 +275,14 @@ export function getFollowFeed<T>(body: FollowFeedBody) {
 
 export function getUserPublishedFeed<T>(body: UserPublishedFeedBody) {
     return apiRequest<T>("/v1/feed/user/publish", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
+}
+
+export function getUserFavoriteFeed<T>(body: UserFavoriteFeedBody) {
+    return apiRequest<T>("/v1/feed/user/favorite", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
+}
+
+export function getUserFollowers<T>(body: UserFollowListBody) {
+    return apiRequest<T>("/v1/user/followers", { method: "POST", body, optionalAuth: true, fallbackToGuestOnAuthFailure: true });
 }
 
 export function getContentDetail<T>(body: ContentDetailBody) {

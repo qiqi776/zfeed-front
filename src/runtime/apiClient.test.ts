@@ -13,6 +13,8 @@ import {
     getEditableContentDetail,
     getFollowFeed,
     getRecommendFeed,
+    getUserFavoriteFeed,
+    getUserFollowers,
     getUserProfile,
     getUserPublishedFeed,
     likeContent,
@@ -281,6 +283,8 @@ describe("apiClient", () => {
         await getContentDetail({ content_id: "1001" });
         await getUserProfile("1001");
         await getUserPublishedFeed({ user_id: "1001", cursor: "", page_size: 20 });
+        await getUserFavoriteFeed({ user_id: "1001", cursor: "", page_size: 20 });
+        await getUserFollowers({ user_id: "1001", cursor: 0, page_size: 20 });
 
         expect(fetchMock).toHaveBeenNthCalledWith(1, "/v1/feed/recommend", expect.objectContaining({
             method: "POST",
@@ -315,6 +319,20 @@ describe("apiClient", () => {
                 Authorization: "Bearer reader-token"
             }),
             body: JSON.stringify({ user_id: "1001", cursor: "", page_size: 20 })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(6, "/v1/feed/user/favorite", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            }),
+            body: JSON.stringify({ user_id: "1001", cursor: "", page_size: 20 })
+        }));
+        expect(fetchMock).toHaveBeenNthCalledWith(7, "/v1/user/followers", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer reader-token"
+            }),
+            body: JSON.stringify({ user_id: "1001", cursor: 0, page_size: 20 })
         }));
     });
 
