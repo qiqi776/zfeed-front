@@ -533,8 +533,8 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByText("接口关注内容 <script>alert(1)</script>")).toBeInTheDocument();
-        expect(screen.getByText("关注作者 <safe>")).toBeInTheDocument();
-        expect(screen.getByText("来自关注作者的新内容")).toBeInTheDocument();
+        expect(within(screen.getByRole("main")).getByText("关注作者 <safe>")).toBeInTheDocument();
+        expect(within(screen.getByRole("main")).getByText("来自关注作者的新内容")).toBeInTheDocument();
         expect(document.querySelector("script")).toBeNull();
         expect(fetchMock).toHaveBeenCalledWith("/v1/feed/follow", expect.objectContaining({
             method: "POST",
@@ -543,6 +543,140 @@ describe("App routes", () => {
             }),
             body: JSON.stringify({ cursor: "", page_size: 20 })
         }));
+    });
+
+    it("renders following feed cards with the same visual classes as recommendation cards", async () => {
+        const homeFetchMock = vi.fn(async () => jsonResponse(recommendFeedPayload([
+            defaultRecommendFeedItem({
+                author_name: "首页样式作者",
+                title: "首页样式基准卡片",
+                description: "推荐流卡片样式基准"
+            })
+        ])));
+        vi.stubGlobal("fetch", homeFetchMock);
+        window.history.pushState({}, "", "/home");
+
+        const { unmount } = render(<App />);
+
+        const homeHeading = await screen.findByRole("heading", { name: "首页样式基准卡片" });
+        const homeArticle = homeHeading.closest("article");
+        expect(homeArticle).not.toBeNull();
+        const homeActionButton = within(homeArticle as HTMLElement).getByRole("button", { name: "取消点赞" });
+        const homeBookmarkButton = within(homeArticle as HTMLElement).getByRole("button", { name: "收藏" });
+        const expectedArticleClass = homeArticle?.className;
+        const expectedHeadingClass = homeHeading.className;
+        const expectedLikeButtonClass = homeActionButton.className;
+        const expectedBookmarkButtonClass = homeBookmarkButton.className;
+        unmount();
+
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "following-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const followingFetchMock = vi.fn(async () => jsonResponse({
+            items: [{
+                content_id: 2001,
+                content_type: 1,
+                author_id: 2002,
+                author_name: "关注样式作者",
+                title: "关注样式卡片",
+                description: "关注流卡片应该复用推荐流样式",
+                published_at: 1765670400,
+                like_count: 6,
+                favorite_count: 2,
+                comment_count: 1,
+                is_liked: true,
+                is_favorited: false
+            }],
+            next_cursor: "",
+            has_more: false
+        }));
+        vi.stubGlobal("fetch", followingFetchMock);
+        window.history.pushState({}, "", "/following");
+
+        render(<App />);
+
+        const followingHeading = await screen.findByRole("heading", { name: "关注样式卡片" });
+        const followingArticle = followingHeading.closest("article");
+        expect(followingArticle).not.toBeNull();
+        expect(followingArticle?.className).toBe(expectedArticleClass);
+        expect(followingHeading.className).toBe(expectedHeadingClass);
+        expect(within(followingArticle as HTMLElement).getByRole("button", { name: "取消点赞" }).className).toBe(expectedLikeButtonClass);
+        expect(within(followingArticle as HTMLElement).getByRole("button", { name: "收藏" }).className).toBe(expectedBookmarkButtonClass);
+    });
+
+    it("keeps the home side rails when navigating to the following feed", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "following-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/feed/recommend") {
+                return jsonResponse(recommendFeedPayload([
+                    defaultRecommendFeedItem({
+                        author_name: "首页推荐作者",
+                        title: "首页推荐内容",
+                        description: "首页推荐摘要"
+                    })
+                ]));
+            }
+
+            if (input === "/v1/feed/follow") {
+                return jsonResponse({
+                    items: [{
+                        content_id: 2001,
+                        content_type: 1,
+                        author_id: 2002,
+                        author_name: "关注流作者",
+                        title: "关注流主栏内容",
+                        description: "只切换中间信息流",
+                        published_at: 1765670400,
+                        like_count: 6,
+                        favorite_count: 2,
+                        comment_count: 1,
+                        is_liked: false,
+                        is_favorited: false
+                    }],
+                    next_cursor: "",
+                    has_more: false
+                });
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "首页推荐内容" })).toBeInTheDocument();
+        expect(screen.getByText("频道").closest("aside")).toHaveClass("lg:col-span-2");
+        expect(screen.getByRole("heading", { name: "今日数据" }).closest("aside")).toHaveClass("lg:col-span-3");
+        const initialLeftRail = screen.getByText("频道").closest("aside") as HTMLElement;
+        expect(within(initialLeftRail).getByRole("link", { name: /推荐/ })).toHaveClass("text-primary");
+        expect(within(initialLeftRail).getByRole("link", { name: /关注/ })).not.toHaveClass("text-primary");
+        const initialSuggestedPanel = screen.getByRole("heading", { name: "为你推荐" }).closest(".glass-panel");
+        expect(initialSuggestedPanel).not.toBeNull();
+        expect(within(initialSuggestedPanel as HTMLElement).getByText("首页推荐作者")).toBeInTheDocument();
+
+        const header = document.querySelector("header");
+        expect(header).not.toBeNull();
+        fireEvent.click(within(header as HTMLElement).getByRole("link", { name: "关注" }));
+
+        expect(await screen.findByRole("heading", { name: "关注流主栏内容" })).toBeInTheDocument();
+        expect(window.location.pathname).toBe("/following");
+        expect(screen.getByText("频道").closest("aside")).toHaveClass("lg:col-span-2");
+        expect(screen.getByRole("heading", { name: "今日数据" }).closest("aside")).toHaveClass("lg:col-span-3");
+        const followingLeftRail = screen.getByText("频道").closest("aside") as HTMLElement;
+        expect(within(followingLeftRail).getByRole("link", { name: /推荐/ })).not.toHaveClass("text-primary");
+        expect(within(followingLeftRail).getByRole("link", { name: /关注/ })).toHaveClass("text-primary");
+        const suggestedPanel = screen.getByRole("heading", { name: "为你推荐" }).closest(".glass-panel");
+        expect(suggestedPanel).not.toBeNull();
+        expect(within(suggestedPanel as HTMLElement).getByText("首页推荐作者")).toBeInTheDocument();
+        expect(within(suggestedPanel as HTMLElement).queryByText("关注流作者")).not.toBeInTheDocument();
+        expect(within(screen.getByRole("main")).getByText("只切换中间信息流")).toBeInTheDocument();
     });
 
     it("shows an empty state when the following feed has no items", async () => {

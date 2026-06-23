@@ -74,7 +74,7 @@ export function App() {
 
             const nextUrl = new URL(link.href);
             if (nextUrl.href !== window.location.href) {
-                window.history.pushState({}, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+                window.history.pushState(getNavigationState(link), "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
                 window.dispatchEvent(new PopStateEvent("popstate"));
             }
         };
@@ -165,4 +165,8 @@ function shouldHandleInternalNavigation(event: MouseEvent, link: HTMLAnchorEleme
             url.pathname === "/login" ||
             url.pathname === "/register")
     );
+}
+
+function getNavigationState(link: HTMLAnchorElement) {
+    return link.dataset.preserveFeedRails === "true" ? { preserveFeedRails: true } : {};
 }
