@@ -3353,6 +3353,8 @@ describe("App routes", () => {
         render(<App />);
 
         fireEvent.change(await screen.findByPlaceholderText("标题"), { target: { value: "一篇真实发布的文章" } });
+        fireEvent.change(screen.getByPlaceholderText("写一段简介，方便读者快速了解内容..."), { target: { value: "这是独立文章简介" } });
+        fireEvent.change(screen.getByPlaceholderText("封面 URL，可选"), { target: { value: "https://example.com/article-cover.png" } });
         fireEvent.change(screen.getByPlaceholderText("写下你的想法..."), { target: { value: "这是正文内容" } });
         fireEvent.click(screen.getByRole("button", { name: "发布" }));
 
@@ -3364,12 +3366,39 @@ describe("App routes", () => {
             }),
             body: JSON.stringify({
                 title: "一篇真实发布的文章",
-                description: "这是正文内容",
+                description: "这是独立文章简介",
+                cover: "https://example.com/article-cover.png",
                 content: "这是正文内容",
                 visibility: 1
             })
         })));
         await waitFor(() => expect(window.location.pathname).toBe("/content/6789"));
+    });
+
+    it("omits optional article fields when publishing without summary or cover", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "publish-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async () => jsonResponse({ content_id: 6790 }));
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/compose");
+
+        render(<App />);
+
+        fireEvent.change(await screen.findByPlaceholderText("标题"), { target: { value: "没有简介的文章" } });
+        fireEvent.change(screen.getByPlaceholderText("写下你的想法..."), { target: { value: "正文仍然会发布" } });
+        fireEvent.click(screen.getByRole("button", { name: "发布" }));
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/content/article/publish", expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({
+                title: "没有简介的文章",
+                content: "正文仍然会发布",
+                visibility: 1
+            })
+        })));
     });
 
     it("validates compose title and content before publishing", async () => {
