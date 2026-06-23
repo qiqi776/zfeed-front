@@ -1351,6 +1351,66 @@ describe("App routes", () => {
         }));
     });
 
+    it("keeps the feed side rails visible on content detail", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    title: "三栏详情内容"
+                }));
+            }
+
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/1001");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "三栏详情内容" })).toBeInTheDocument();
+        expect(screen.getByText("频道").closest("aside")).toHaveClass("lg:col-span-2");
+        expect(screen.getByRole("heading", { name: "今日数据" }).closest("aside")).toHaveClass("lg:col-span-3");
+    });
+
+    it("uses loaded comments to keep refreshed detail comment counts in sync", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    title: "评论数补齐内容",
+                    comment_count: 0
+                }));
+            }
+
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([
+                    defaultCommentItem({
+                        comment_id: "5001",
+                        nickname: "测试19",
+                        comment: "你好啊"
+                    })
+                ]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/1001");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "评论数补齐内容" })).toBeInTheDocument();
+        expect(await screen.findByText("你好啊")).toBeInTheDocument();
+        expect(screen.getByText("1 条讨论")).toBeInTheDocument();
+        const detailArticle = screen.getByRole("heading", { name: "评论数补齐内容" }).closest("article");
+        expect(detailArticle).not.toBeNull();
+        expect(within(detailArticle as HTMLElement).getByText("1")).toBeInTheDocument();
+    });
+
     it("shows an error state when numeric content detail cannot be loaded", async () => {
         vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, { status: 500 })));
         window.history.pushState({}, "", "/content/1001");

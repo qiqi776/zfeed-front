@@ -4,6 +4,7 @@ import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
 import { renderUserAvatar } from "./avatar";
 import { getContentScene } from "./contentScene";
+import { getCachedHomeRailItems, homeStyles, renderHomeHeader, renderLeftRail, renderRightRail } from "./feedShell";
 import { PageState } from "./PageState";
 
 type ApiContentDetail = {
@@ -77,9 +78,6 @@ function DynamicContentDetailPage({ contentId }: { contentId: string }) {
     useEffect(() => {
         let isCurrent = true;
 
-        setState({ status: "loading" });
-        setCommentsState({ status: "loading" });
-
         getContentDetail<ContentDetailResponse>({ content_id: contentId })
             .then((response) => {
                 if (!isCurrent) {
@@ -127,12 +125,19 @@ function DynamicContentDetailPage({ contentId }: { contentId: string }) {
 
     return createElement(
         PageShell,
-        { title, htmlClass: "light", bodyClass: detailBodyClass, styles },
+        { title, htmlClass: "light", bodyClass: detailBodyClass, styles: `${homeStyles}\n${styles}` },
         createElement("div", { className: "page-root" },
-            createElement("main", { className: "min-h-screen px-4 py-6 md:px-6 md:py-10" },
-                createElement("section", { className: "glass-panel feed-transition feed-ready mx-auto w-full max-w-4xl rounded-3xl p-5 md:p-8" },
-                    createElement("a", { className: "font-label-sm text-primary", href: "/home" }, "返回首页"),
-                    renderDynamicDetailState(state, commentsState)
+            renderHomeHeader("home"),
+            createElement("div", { className: "pt-24 px-4 md:px-6 max-w-[1600px] mx-auto pb-safe" },
+                createElement("div", { className: "grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-5" },
+                    renderLeftRail("home"),
+                    createElement("main", { className: "feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-6 pb-24 feed-ready" },
+                        createElement("section", { className: "glass-panel rounded-3xl p-5 md:p-8" },
+                            createElement("a", { className: "font-label-sm text-primary", href: "/home" }, "返回首页"),
+                            renderDynamicDetailState(state, commentsState)
+                        )
+                    ),
+                    renderRightRail(getCachedHomeRailItems())
                 )
             )
         )
@@ -164,10 +169,21 @@ function renderDynamicDetailState(state: DynamicDetailState, commentsState: Comm
         });
     }
 
+    const detail = withSyncedCommentCount(state.detail, commentsState);
+
     return createElement("div", { className: "mt-6" },
-        renderDynamicDetail(state.detail),
-        renderCommentSection(state.detail, commentsState)
+        renderDynamicDetail(detail),
+        renderCommentSection(detail, commentsState)
     );
+}
+
+function withSyncedCommentCount(detail: ApiContentDetail, commentsState: CommentListState): ApiContentDetail {
+    if (commentsState.status !== "ready") {
+        return detail;
+    }
+
+    const syncedCount = Math.max(detail.comment_count ?? 0, commentsState.comments.length);
+    return syncedCount === detail.comment_count ? detail : { ...detail, comment_count: syncedCount };
 }
 
 function renderDynamicDetail(detail: ApiContentDetail) {
