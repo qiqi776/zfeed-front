@@ -3,6 +3,7 @@ import { ApiError, getMe, getUserFavoriteFeed, getUserFollowers, getUserProfile,
 import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
 import { renderUserAvatar } from "./avatar";
+import { getContentScene } from "./contentScene";
 import { PageState } from "./PageState";
 
 type ProfileUserInfo = {
@@ -75,6 +76,7 @@ type UserProfileState =
 
 type UserPublishedFeedItem = {
     content_id: string | number;
+    content_type?: number | string;
     author_id: string | number;
     author_name: string;
     author_avatar?: string;
@@ -381,9 +383,11 @@ function renderUserReadyPage(profile: UserProfile, tabs: ProfileTabsState) {
 function renderUserPublishedCard(item: UserPublishedFeedItem) {
     const contentId = String(item.content_id);
     const authorId = String(item.author_id);
+    const scene = getContentScene(item.content_type);
 
     return createElement("article", {
         className: "glass-panel hover-lift shine-effect rounded-3xl p-5 md:p-6",
+        "data-content-scene": scene,
         key: contentId
     },
         createElement("div", { className: "relative z-20 flex min-w-0 items-start gap-3" },
@@ -415,8 +419,10 @@ function renderUserPublishedCard(item: UserPublishedFeedItem) {
                     : null,
                 createElement("div", { className: "mt-5 flex flex-wrap items-center gap-3" },
                     createElement("button", {
+                        "aria-label": item.is_liked ? "取消点赞" : "点赞",
                         className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${item.is_liked ? "text-error" : "text-on-surface-variant"}`,
                         "data-content-id": contentId,
+                        "data-content-scene": scene,
                         "data-content-user-id": authorId,
                         type: "button"
                     },
@@ -424,12 +430,14 @@ function renderUserPublishedCard(item: UserPublishedFeedItem) {
                         createElement("span", null, formatPublishedCount(item.like_count))
                     ),
                     createElement("button", {
+                        "aria-label": item.is_favorited ? "取消收藏" : "收藏",
                         className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${item.is_favorited ? "text-primary" : "text-on-surface-variant"}`,
                         "data-content-id": contentId,
+                        "data-content-scene": scene,
                         type: "button"
                     },
                         createElement("span", { className: "material-symbols-outlined text-[18px]" }, "bookmark"),
-                        createElement("span", null, item.is_favorited ? "已保存" : "收藏")
+                        createElement("span", null, formatPublishedCount(item.favorite_count))
                     ),
                     createElement("a", {
                         className: "glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm text-on-surface-variant active:scale-95 transition-all duration-300",

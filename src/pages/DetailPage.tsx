@@ -3,6 +3,7 @@ import { getContentDetail, listComments } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
 import { PageShell } from "../runtime/PageShell";
 import { renderUserAvatar } from "./avatar";
+import { getContentScene } from "./contentScene";
 import { PageState } from "./PageState";
 
 type ApiContentDetail = {
@@ -95,7 +96,7 @@ function DynamicContentDetailPage({ contentId }: { contentId: string }) {
 
                 return listComments<CommentListResponse>({
                     content_id: String(response.detail.content_id),
-                    scene: "content",
+                    scene: getContentScene(response.detail.content_type),
                     cursor: 0,
                     page_size: 20
                 })
@@ -172,10 +173,11 @@ function renderDynamicDetailState(state: DynamicDetailState, commentsState: Comm
 function renderDynamicDetail(detail: ApiContentDetail) {
     const contentId = String(detail.content_id);
     const authorId = String(detail.author_id);
+    const scene = getContentScene(detail.content_type);
     const paragraphs = getArticleParagraphs(detail);
-    const isVideo = detail.content_type === 2;
+    const isVideo = scene === "VIDEO";
 
-    return createElement("article", null,
+    return createElement("article", { "data-content-scene": scene },
         detail.cover_url
             ? createElement("img", {
                 alt: detail.title,
@@ -221,8 +223,10 @@ function renderDynamicDetail(detail: ApiContentDetail) {
             : null,
         createElement("div", { className: "mt-8 flex flex-wrap items-center gap-3" },
             createElement("button", {
+                "aria-label": detail.is_liked ? "取消点赞" : "点赞",
                 className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${detail.is_liked ? "text-error" : "text-on-surface-variant"}`,
                 "data-content-id": contentId,
+                "data-content-scene": scene,
                 "data-content-user-id": authorId,
                 type: "button"
             },
@@ -230,16 +234,18 @@ function renderDynamicDetail(detail: ApiContentDetail) {
                 createElement("span", null, formatCount(detail.like_count))
             ),
             createElement("button", {
+                "aria-label": detail.is_favorited ? "取消收藏" : "收藏",
                 className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${detail.is_favorited ? "text-primary" : "text-on-surface-variant"}`,
                 "data-content-id": contentId,
+                "data-content-scene": scene,
                 type: "button"
             },
                 createElement("span", { className: "material-symbols-outlined text-[18px]" }, "bookmark"),
-                createElement("span", null, detail.is_favorited ? "已保存" : "收藏")
+                createElement("span", null, formatCount(detail.favorite_count))
             ),
             createElement("div", { className: "glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm text-on-surface-variant" },
                 createElement("span", { className: "material-symbols-outlined text-[18px]" }, "chat_bubble"),
-                createElement("span", null, formatCount(detail.comment_count))
+                createElement("span", { "data-content-comment-count": contentId }, formatCount(detail.comment_count))
             )
         )
     );
@@ -247,15 +253,16 @@ function renderDynamicDetail(detail: ApiContentDetail) {
 
 function renderCommentSection(detail: ApiContentDetail, state: CommentListState) {
     const contentUserId = String(detail.author_id);
+    const scene = getContentScene(detail.content_type);
     const comments = state.status === "ready" ? state.comments : [];
     const session = readAuthSession();
     const currentUser = session?.user;
 
-    return createElement("section", { className: "mt-6 glass-panel rounded-3xl p-5", "data-content-user-id": contentUserId },
+    return createElement("section", { className: "mt-6 glass-panel rounded-3xl p-5", "data-content-scene": scene, "data-content-user-id": contentUserId },
         createElement("div", { className: "mb-4 flex items-center justify-between gap-4" },
             createElement("div", null,
                 createElement("h2", { className: "font-headline-md text-on-surface" }, "评论"),
-                createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, `${formatCount(detail.comment_count)} 条讨论`)
+                createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant", "data-comment-discussion-count": String(detail.content_id) }, `${formatCount(detail.comment_count)} 条讨论`)
             )
         ),
         createElement("div", { className: "comment-row rounded-2xl p-4 mb-4", "data-content-user-id": contentUserId },

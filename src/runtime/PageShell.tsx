@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import {
+    type ContentScene,
     commentContent,
     deleteComment,
     editArticle,
@@ -16,6 +17,7 @@ import {
 } from "./apiClient";
 import { readAuthSession } from "./authStore";
 import { navigateTo } from "./navigation";
+import { showToast } from "./toast";
 
 type PageShellProps = {
     title: string;
@@ -23,6 +25,13 @@ type PageShellProps = {
     bodyClass: string;
     styles: string;
     children?: ReactNode;
+};
+
+type ButtonStateSnapshot = {
+    ariaLabel: string | null;
+    className: string;
+    text: string;
+    valueText: string | null;
 };
 
 const maxCommentLength = 255;
@@ -150,6 +159,7 @@ function handleActionClick(event: MouseEvent) {
         return;
     }
     const contentUserId = resolveContentUserId(button);
+    const scene = resolveContentScene(button);
 
     if (!readAuthSession()) {
         navigateToLogin();
@@ -162,11 +172,12 @@ function handleActionClick(event: MouseEvent) {
     applyOptimisticState(button, action);
 
     const request = action.kind === "like"
-        ? action.nextActive ? likeContent({ contentId, contentUserId }) : unlikeContent({ contentId })
-        : action.nextActive ? favoriteContent({ contentId }) : unfavoriteContent({ contentId });
+        ? action.nextActive ? likeContent({ contentId, contentUserId, scene }) : unlikeContent({ contentId, scene })
+        : action.nextActive ? favoriteContent({ contentId, scene }) : unfavoriteContent({ contentId, scene });
 
     request.catch((error: unknown) => {
         restoreButtonState(button, snapshot);
+        showToast(getContentActionFailureMessage(action));
         if (isAuthError(error)) {
             navigateToLogin();
         }
@@ -258,6 +269,7 @@ function handleCommentSubmitClick(event: MouseEvent) {
 
     const contentId = resolveNumericContentIdFromPath();
     const contentUserId = button.closest<HTMLElement>("[data-content-user-id]")?.dataset.contentUserId ?? resolveContentUserIdFromPath();
+    const scene = resolveContentScene(button);
     if (!contentId || !contentUserId) {
         showInlineStatus(button, "评论失败，请重试", "error");
         return;
@@ -271,15 +283,17 @@ function handleCommentSubmitClick(event: MouseEvent) {
 
     commentContent({
         content_id: contentId,
-        scene: "content",
+        scene,
         comment,
         content_user_id: contentUserId
     }).then(() => {
         composer.value = "";
         pendingComment?.setAttribute("data-comment-state", "sent");
+        updateCommentCounters(button, 1);
         showInlineStatus(button, "评论已发送", "success");
     }).catch((error: unknown) => {
         pendingComment?.remove();
+        restoreCommentEmptyState(button);
         showInlineStatus(button, "评论失败，请重试", "error");
         if (isAuthError(error)) {
             navigateToLogin();
@@ -360,6 +374,7 @@ function handleReplySubmitClick(event: MouseEvent) {
 
     const contentId = resolveNumericContentIdFromPath();
     const contentUserId = row.closest<HTMLElement>("[data-content-user-id]")?.dataset.contentUserId ?? resolveContentUserIdFromPath();
+    const scene = resolveContentScene(row);
     if (!contentId || !contentUserId) {
         showInlineStatus(button, "回复失败，请重试", "error");
         return;
@@ -373,7 +388,7 @@ function handleReplySubmitClick(event: MouseEvent) {
 
     commentContent({
         content_id: contentId,
-        scene: "content",
+        scene,
         comment,
         parent_id: metadata.commentId,
         root_id: metadata.rootId,
@@ -382,6 +397,7 @@ function handleReplySubmitClick(event: MouseEvent) {
     }).then(() => {
         input.value = "";
         pendingReply?.setAttribute("data-comment-state", "sent");
+        updateCommentCounters(button, 1);
         showInlineStatus(button, "回复已发送", "success");
     }).catch((error: unknown) => {
         pendingReply?.remove();
@@ -429,17 +445,20 @@ function handleDeleteCommentClick(event: MouseEvent) {
     button.dataset.pending = "true";
     const parent = row.parentElement;
     const nextSibling = row.nextSibling;
+    const counterRoot = row.closest<HTMLElement>("main") ?? document.body;
     row.remove();
+    updateCommentCountersInRoot(counterRoot, -1);
 
     deleteComment({
         comment_id: metadata.commentId,
         content_id: contentId,
-        scene: "content",
+        scene: resolveContentScene(row),
         root_id: metadata.rootId
     }).catch((error: unknown) => {
         if (parent) {
             parent.insertBefore(row, nextSibling);
         }
+        updateCommentCountersInRoot(counterRoot, 1);
         showInlineStatus(button, "删除失败，请重试", "error");
         if (isAuthError(error)) {
             navigateToLogin();
@@ -692,6 +711,15 @@ function isHomeComposerInput(input: HTMLInputElement) {
 }
 
 function resolveContentAction(button: HTMLElement) {
+    const ariaLabel = button.getAttribute("aria-label")?.trim();
+    if (ariaLabel === "点赞" || ariaLabel === "取消点赞") {
+        return { kind: "like" as const, nextActive: ariaLabel === "点赞" };
+    }
+
+    if (ariaLabel === "收藏" || ariaLabel === "取消收藏") {
+        return { kind: "favorite" as const, nextActive: ariaLabel === "收藏" };
+    }
+
     const iconNames = Array.from(button.querySelectorAll(".material-symbols-outlined, [data-lucide]"))
         .map((icon) => icon.getAttribute("data-lucide") ?? icon.textContent?.trim() ?? "");
 
@@ -761,6 +789,17 @@ function resolveContentUserIdFromPath() {
     return "";
 }
 
+function resolveContentScene(element: HTMLElement): ContentScene {
+    const explicitScene = element.dataset.contentScene
+        ?? element.closest<HTMLElement>("[data-content-scene]")?.dataset.contentScene;
+    return normalizeContentScene(explicitScene);
+}
+
+function normalizeContentScene(scene?: string): ContentScene {
+    const normalized = scene?.trim().toUpperCase();
+    return normalized === "VIDEO" || normalized === "COMMENT" ? normalized : "ARTICLE";
+}
+
 function normalizeRouteId(routeId: string) {
     try {
         return decodeURIComponent(routeId).trim();
@@ -804,8 +843,47 @@ function insertPendingComment(button: HTMLElement, comment: string) {
     body.append(author, meta, content);
     row.append(avatar, body);
     item.append(row);
+    comments.querySelector<HTMLElement>('[data-page-state="empty"]')?.setAttribute("hidden", "true");
     comments.prepend(item);
     return item;
+}
+
+function restoreCommentEmptyState(anchor: HTMLElement) {
+    const comments = anchor.closest("section")?.querySelector(".flex.flex-col.gap-3");
+    if (!comments) {
+        return;
+    }
+
+    const hasCommentRows = Array.from(comments.children).some((item) => {
+        return item instanceof HTMLElement && item.classList.contains("comment-row");
+    });
+    if (hasCommentRows) {
+        return;
+    }
+
+    comments.querySelector<HTMLElement>('[data-page-state="empty"]')?.removeAttribute("hidden");
+}
+
+function updateCommentCounters(anchor: HTMLElement, delta: number) {
+    const root = anchor.closest("main") ?? document;
+    updateCommentCountersInRoot(root, delta);
+}
+
+function updateCommentCountersInRoot(root: ParentNode, delta: number) {
+    const actionCount = root.querySelector<HTMLElement>("[data-content-comment-count]");
+    updateNumericText(actionCount, delta);
+
+    const discussionCount = root.querySelector<HTMLElement>("[data-comment-discussion-count]");
+    if (!discussionCount) {
+        return;
+    }
+
+    const currentCount = readLeadingNumber(discussionCount.textContent ?? "");
+    if (currentCount === null) {
+        return;
+    }
+
+    discussionCount.textContent = `${Math.max(0, currentCount + delta)} 条讨论`;
 }
 
 function createReplyComposer(authorName: string) {
@@ -987,25 +1065,31 @@ function optionalNumber(value: string) {
     return Number.isFinite(numberValue) ? numberValue : undefined;
 }
 
-function captureButtonState(button: HTMLElement) {
+function captureButtonState(button: HTMLElement): ButtonStateSnapshot {
     return {
+        ariaLabel: button.getAttribute("aria-label"),
         className: button.className,
-        text: button.textContent ?? ""
+        text: button.textContent ?? "",
+        valueText: findActionValue(button)?.textContent ?? null
     };
 }
 
-function restoreButtonState(button: HTMLElement, snapshot: { className: string; text: string }) {
+function restoreButtonState(button: HTMLElement, snapshot: ButtonStateSnapshot) {
     button.className = snapshot.className;
+    if (snapshot.ariaLabel) {
+        button.setAttribute("aria-label", snapshot.ariaLabel);
+    } else {
+        button.removeAttribute("aria-label");
+    }
+
     if (isFollowButtonText(snapshot.text)) {
         button.textContent = snapshot.text;
         return;
     }
 
-    const label = findActionLabel(button);
-    if (label && snapshot.text.includes("已保存")) {
-        label.textContent = "已保存";
-    } else if (label && snapshot.text.includes("收藏")) {
-        label.textContent = "收藏";
+    const value = findActionValue(button);
+    if (value && snapshot.valueText !== null) {
+        value.textContent = snapshot.valueText;
     }
 }
 
@@ -1018,15 +1102,23 @@ function applyOptimisticState(button: HTMLElement, action: { kind: "like" | "fav
     if (action.kind === "like") {
         setClassToken(button, "text-error", action.nextActive);
         setClassToken(button, "text-on-surface-variant", !action.nextActive);
+        button.setAttribute("aria-label", action.nextActive ? "取消点赞" : "点赞");
+        updateNumericText(findActionValue(button), action.nextActive ? 1 : -1);
         return;
     }
 
     setClassToken(button, "text-primary", action.nextActive);
     setClassToken(button, "text-on-surface-variant", !action.nextActive);
-    const label = findActionLabel(button);
-    if (label) {
-        label.textContent = action.nextActive ? "已保存" : "收藏";
+    button.setAttribute("aria-label", action.nextActive ? "取消收藏" : "收藏");
+    updateNumericText(findActionValue(button), action.nextActive ? 1 : -1);
+}
+
+function getContentActionFailureMessage(action: { kind: "like" | "favorite"; nextActive: boolean }) {
+    if (action.kind === "like") {
+        return action.nextActive ? "点赞失败，请重试" : "取消点赞失败，请重试";
     }
+
+    return action.nextActive ? "收藏失败，请重试" : "取消收藏失败，请重试";
 }
 
 function setClassToken(element: HTMLElement, token: string, enabled: boolean) {
@@ -1045,11 +1137,31 @@ function isFavoriteActive(button: HTMLElement) {
     return button.classList.contains("text-primary") || button.classList.contains("bookmarked") || (button.textContent ?? "").includes("已保存");
 }
 
-function findActionLabel(button: HTMLElement) {
-    return Array.from(button.querySelectorAll("span")).find((item) => {
-        const text = item.textContent?.trim();
-        return text === "收藏" || text === "已保存";
-    });
+function findActionValue(button: HTMLElement) {
+    const spans = Array.from(button.querySelectorAll("span"));
+    return spans.find((item) => !item.classList.contains("material-symbols-outlined")) ?? null;
+}
+
+function updateNumericText(element: HTMLElement | null, delta: number) {
+    if (!element) {
+        return;
+    }
+
+    const currentCount = readLeadingNumber(element.textContent ?? "");
+    if (currentCount === null) {
+        return;
+    }
+
+    element.textContent = String(Math.max(0, currentCount + delta));
+}
+
+function readLeadingNumber(text: string) {
+    const match = text.trim().match(/^\d+/);
+    if (!match) {
+        return null;
+    }
+
+    return Number(match[0]);
 }
 
 function navigateToLogin() {

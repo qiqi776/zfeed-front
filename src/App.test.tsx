@@ -931,6 +931,12 @@ describe("App routes", () => {
         fireEvent.click(screen.getByRole("button", { name: "912 收藏" }));
         expect(await screen.findByRole("heading", { name: "我的真实收藏内容" })).toBeInTheDocument();
         expect(screen.getByText("这条内容来自我的收藏流接口。")).toBeInTheDocument();
+        const favoriteArticle = screen.getByRole("heading", { name: "我的真实收藏内容" }).closest("article");
+        expect(favoriteArticle).not.toBeNull();
+        const contentFavoriteButton = within(favoriteArticle as HTMLElement).getByRole("button", { name: "收藏" });
+        expect(within(contentFavoriteButton).getByText("7")).toBeInTheDocument();
+        fireEvent.click(contentFavoriteButton);
+        expect(within(contentFavoriteButton).getByText("8")).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole("button", { name: "18600 粉丝" }));
         expect(await screen.findByText("粉丝用户")).toBeInTheDocument();
@@ -2116,6 +2122,52 @@ describe("App routes", () => {
         expect(fetchMock).toHaveBeenCalledWith("/v1/feed/recommend", expect.any(Object));
     });
 
+    it("likes recommendation content with count and accessible state updates", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "like-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isRecommendFeedRequest(input)) {
+                return jsonResponse(recommendFeedPayload([
+                    defaultRecommendFeedItem({
+                        content_id: 3001,
+                        author_id: 4001,
+                        author_name: "交互作者",
+                        title: "可点赞推荐内容",
+                        like_count: 6,
+                        is_liked: false,
+                        is_favorited: false
+                    })
+                ]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const heading = await screen.findByRole("heading", { name: "可点赞推荐内容" });
+        const article = heading.closest("article");
+        expect(article).not.toBeNull();
+        const likeButton = within(article as HTMLElement).getByRole("button", { name: "点赞" });
+
+        fireEvent.click(likeButton);
+
+        expect(likeButton).toHaveAttribute("aria-label", "取消点赞");
+        expect(within(likeButton).getByText("7")).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/like", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer like-token"
+            }),
+            body: JSON.stringify({ content_id: "3001", content_user_id: "4001", scene: "ARTICLE" })
+        })));
+    });
+
     it("uses Bearer writes for liked content and rolls back when the API fails", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "write-token",
@@ -2145,7 +2197,7 @@ describe("App routes", () => {
             headers: expect.objectContaining({
                 Authorization: "Bearer write-token"
             }),
-            body: JSON.stringify({ content_id: "1001", scene: "content" })
+            body: JSON.stringify({ content_id: "1001", scene: "ARTICLE" })
         })));
         await waitFor(() => expect(likeButton).toHaveClass("text-error"));
         expect(screen.queryByText("raw failure")).not.toBeInTheDocument();
@@ -2183,6 +2235,51 @@ describe("App routes", () => {
         await waitFor(() => expect(likeButton).not.toBeDisabled());
     });
 
+    it("favorites recommendation content with saved label and accessible state updates", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "favorite-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isRecommendFeedRequest(input)) {
+                return jsonResponse(recommendFeedPayload([
+                    defaultRecommendFeedItem({
+                        content_id: 3101,
+                        author_id: 4101,
+                        author_name: "收藏作者",
+                        title: "可收藏推荐内容",
+                        favorite_count: 2,
+                        is_favorited: false
+                    })
+                ]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const heading = await screen.findByRole("heading", { name: "可收藏推荐内容" });
+        const article = heading.closest("article");
+        expect(article).not.toBeNull();
+        const favoriteButton = within(article as HTMLElement).getByRole("button", { name: "收藏" });
+
+        fireEvent.click(favoriteButton);
+
+        expect(favoriteButton).toHaveAttribute("aria-label", "取消收藏");
+        expect(within(favoriteButton).getByText("3")).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/favorite", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer favorite-token"
+            }),
+            body: JSON.stringify({ content_id: "3101", scene: "ARTICLE" })
+        })));
+    });
+
     it("uses Bearer writes for favorite content and rolls back when the API fails", async () => {
         window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
             token: "favorite-token",
@@ -2211,7 +2308,7 @@ describe("App routes", () => {
             headers: expect.objectContaining({
                 Authorization: "Bearer favorite-token"
             }),
-            body: JSON.stringify({ content_id: "1001", scene: "content" })
+            body: JSON.stringify({ content_id: "1001", scene: "ARTICLE" })
         })));
         await waitFor(() => expect(favoriteButton).toHaveClass("text-on-surface-variant"));
         expect(screen.queryByText("raw favorite failure")).not.toBeInTheDocument();
@@ -2332,6 +2429,64 @@ describe("App routes", () => {
                 Authorization: "Bearer detail-follow-token"
             }),
             body: JSON.stringify({ target_user_id: "1" })
+        })));
+    });
+
+    it("likes and favorites detail content with backend interaction APIs", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "detail-action-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "1001",
+                    author_id: "1",
+                    author_name: "测试1",
+                    title: "详情页交互内容",
+                    like_count: 12,
+                    favorite_count: 5,
+                    is_liked: false,
+                    is_favorited: false
+                }));
+            }
+
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/content/1001");
+
+        render(<App />);
+
+        await screen.findByRole("heading", { name: "详情页交互内容" });
+        const likeButton = screen.getByRole("button", { name: "点赞" });
+        const favoriteButton = screen.getByRole("button", { name: "收藏" });
+
+        fireEvent.click(likeButton);
+        fireEvent.click(favoriteButton);
+
+        expect(likeButton).toHaveAttribute("aria-label", "取消点赞");
+        expect(within(likeButton).getByText("13")).toBeInTheDocument();
+        expect(favoriteButton).toHaveAttribute("aria-label", "取消收藏");
+        expect(within(favoriteButton).getByText("6")).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/like", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer detail-action-token"
+            }),
+            body: JSON.stringify({ content_id: "1001", content_user_id: "1", scene: "ARTICLE" })
+        })));
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/favorite", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer detail-action-token"
+            }),
+            body: JSON.stringify({ content_id: "1001", scene: "ARTICLE" })
         })));
     });
 
@@ -2505,10 +2660,13 @@ describe("App routes", () => {
         render(<App />);
 
         const composer = await screen.findByPlaceholderText("写下你的观点，补充或提问...");
+        expect(screen.getByText("3 条讨论")).toBeInTheDocument();
         fireEvent.change(composer, { target: { value: "这条评论来自真实接口" } });
         fireEvent.click(screen.getByRole("button", { name: "发送" }));
 
         expect(await screen.findByText("这条评论来自真实接口")).toBeInTheDocument();
+        expect(await screen.findByText("4 条讨论")).toBeInTheDocument();
+        expect(screen.getByText("还没有评论")).not.toBeVisible();
         await waitFor(() => expect(composer).toHaveValue(""));
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
             method: "POST",
@@ -2517,7 +2675,7 @@ describe("App routes", () => {
             }),
             body: JSON.stringify({
                 content_id: "1001",
-                scene: "content",
+                scene: "ARTICLE",
                 comment: "这条评论来自真实接口",
                 content_user_id: "1001"
             })
@@ -2641,6 +2799,7 @@ describe("App routes", () => {
         render(<App />);
 
         const replyButtons = await screen.findAllByRole("button", { name: "回复" });
+        expect(screen.getByText("3 条讨论")).toBeInTheDocument();
         fireEvent.click(replyButtons[0]);
 
         const replyInput = await screen.findByPlaceholderText("回复 测试1...");
@@ -2650,6 +2809,7 @@ describe("App routes", () => {
         fireEvent.click(within(replyComposer as HTMLElement).getByRole("button", { name: "发送" }));
 
         expect(await screen.findByText("补充一下这条回复")).toBeInTheDocument();
+        expect(await screen.findByText("4 条讨论")).toBeInTheDocument();
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
             method: "POST",
             headers: expect.objectContaining({
@@ -2657,7 +2817,7 @@ describe("App routes", () => {
             }),
             body: JSON.stringify({
                 content_id: "1001",
-                scene: "content",
+                scene: "ARTICLE",
                 comment: "补充一下这条回复",
                 parent_id: "3001",
                 root_id: "3001",
@@ -2756,9 +2916,11 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByText("评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。")).toBeInTheDocument();
+        expect(screen.getByText("3 条讨论")).toBeInTheDocument();
         fireEvent.click(screen.getByRole("button", { name: "删除评论" }));
 
         await waitFor(() => expect(screen.queryByText("评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。")).not.toBeInTheDocument());
+        expect(await screen.findByText("2 条讨论")).toBeInTheDocument();
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
             method: "DELETE",
             headers: expect.objectContaining({
@@ -2767,7 +2929,7 @@ describe("App routes", () => {
             body: JSON.stringify({
                 comment_id: "3003",
                 content_id: "1001",
-                scene: "content",
+                scene: "ARTICLE",
                 root_id: "3003"
             })
         })));
@@ -2809,12 +2971,14 @@ describe("App routes", () => {
 
         const comment = "评论区也需要保持阅读节奏，信息密度不能太吵。喜欢这种评论卡片和正文之间的层级。";
         expect(await screen.findByText(comment)).toBeInTheDocument();
+        expect(screen.getByText("3 条讨论")).toBeInTheDocument();
         fireEvent.click(screen.getByRole("button", { name: "删除评论" }));
 
         await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/comment", expect.objectContaining({
             method: "DELETE"
         })));
         expect(await screen.findByText(comment)).toBeInTheDocument();
+        expect(await screen.findByText("3 条讨论")).toBeInTheDocument();
         expect(await screen.findByText("删除失败，请重试")).toBeInTheDocument();
         expect(screen.queryByText("raw delete failure")).not.toBeInTheDocument();
     });

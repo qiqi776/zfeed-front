@@ -1,5 +1,6 @@
 import { createElement, useEffect, useState } from "react";
 import { getContentDetail, listComments } from "../../runtime/apiClient";
+import { getContentScene } from "../contentScene";
 
 type Props = {
     contentId: number;
@@ -54,7 +55,7 @@ export function ContentPreviewModal({ contentId, open, onClose }: Props) {
         setTab("detail");
         Promise.all([
             getContentDetail<ContentInfo>({ content_id: String(contentId) }).catch(() => null),
-            listComments<CommentsRes>({ content_id: String(contentId), scene: "content", cursor: 0, page_size: 30 })
+            listComments<CommentsRes>({ content_id: String(contentId), scene: getContentScene(), cursor: 0, page_size: 30 })
                 .then((r) => r?.comments ?? []).catch(() => []),
         ]).then(([d, c]) => {
             setDetail(d);

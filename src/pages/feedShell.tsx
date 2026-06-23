@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { readAuthSession } from "../runtime/authStore";
 import { renderUserAvatar } from "./avatar";
+import { getContentScene } from "./contentScene";
 import { sharedGlassStyles } from "./sharedGlassStyles";
 
 export type FeedRailContentItem = {
@@ -13,12 +14,14 @@ export type FeedRailContentItem = {
 
 export type FeedCardItem = FeedRailContentItem & {
     content_id: string | number;
+    content_type?: number | string;
     author_id: string | number;
     author_name: string;
     title: string;
     cover_url?: string;
     published_at?: number;
     like_count?: number;
+    favorite_count?: number;
     comment_count?: number;
     is_liked?: boolean;
     is_favorited?: boolean;
@@ -197,8 +200,9 @@ export function renderRightRail(items: FeedRailContentItem[] = []) {
 export function renderFeedCard(item: FeedCardItem) {
     const contentId = String(item.content_id);
     const authorId = String(item.author_id);
+    const scene = getContentScene(item.content_type);
 
-    return createElement("article", { className: "glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect", key: contentId },
+    return createElement("article", { className: "glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect", "data-content-scene": scene, key: contentId },
         createElement("div", { className: "relative z-20 flex items-center justify-between mb-4" },
             createElement("div", { className: "flex min-w-0 items-center gap-3" },
                 renderUserAvatar(
@@ -233,6 +237,7 @@ export function renderFeedCard(item: FeedCardItem) {
                 "aria-label": item.is_liked ? "取消点赞" : "点赞",
                 className: `flex items-center gap-1 ${item.is_liked ? "text-error" : "text-on-surface-variant"} hover:text-error active:scale-95 transition-colors`,
                 "data-content-id": contentId,
+                "data-content-scene": scene,
                 "data-content-user-id": authorId,
                 type: "button"
             },
@@ -243,10 +248,11 @@ export function renderFeedCard(item: FeedCardItem) {
                 "aria-label": item.is_favorited ? "取消收藏" : "收藏",
                 className: `flex items-center gap-1 ${item.is_favorited ? "text-primary" : "text-on-surface-variant"} hover:text-primary active:scale-95 transition-colors`,
                 "data-content-id": contentId,
+                "data-content-scene": scene,
                 type: "button"
             },
                 createElement("span", { className: "material-symbols-outlined text-[20px]" }, "bookmark"),
-                createElement("span", { className: "font-meta-xs" }, item.is_favorited ? "已保存" : "收藏")
+                createElement("span", { className: "font-meta-xs" }, formatCount(item.favorite_count))
             ),
             createElement("a", { className: "flex items-center gap-1 text-on-surface-variant hover:text-primary active:scale-95 transition-colors", href: `/content/${contentId}` },
                 createElement("span", { className: "material-symbols-outlined text-[20px]" }, "chat_bubble"),

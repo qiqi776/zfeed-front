@@ -8,10 +8,12 @@ type RequestOptions = {
     fallbackToGuestOnAuthFailure?: boolean;
 };
 
+export type ContentScene = "ARTICLE" | "VIDEO" | "COMMENT";
+
 type ContentActionBody = {
     contentId: string;
     contentUserId?: string;
-    scene?: "content";
+    scene?: ContentScene;
 };
 
 type FollowUserBody = {
@@ -20,7 +22,7 @@ type FollowUserBody = {
 
 type CommentBody = {
     content_id: string;
-    scene: "content";
+    scene: ContentScene;
     comment: string;
     content_user_id: string;
     parent_id?: string;
@@ -31,7 +33,7 @@ type CommentBody = {
 type DeleteCommentBody = {
     comment_id: string;
     content_id: string;
-    scene: "content";
+    scene: ContentScene;
     root_id?: string;
     parent_id?: string;
 };
@@ -114,7 +116,7 @@ type ContentDetailBody = {
 
 type CommentListBody = {
     content_id: string;
-    scene: "content";
+    scene: ContentScene;
     cursor: string | number;
     page_size: number;
 };
@@ -462,6 +464,6 @@ function toContentActionPayload(body: ContentActionBody, includeContentUser = fa
     return {
         content_id: body.contentId,
         ...(includeContentUser && body.contentUserId ? { content_user_id: body.contentUserId } : {}),
-        scene: body.scene ?? "content"
+        scene: body.scene ?? "ARTICLE"
     };
 }
