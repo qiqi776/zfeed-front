@@ -641,8 +641,10 @@ function handlePublishClick(event: MouseEvent) {
     }
 
     const title = getNamedFieldValue(form, "title");
+    const description = getNamedFieldValue(form, "description");
+    const cover = getNamedFieldValue(form, "cover");
     const content = getNamedFieldValue(form, "content");
-    const errors = validatePublishFields({ title, content });
+    const errors = validatePublishFields({ title, description, content });
     if (errors.length > 0) {
         showFormStatus(form, errors[0], "error");
         return;
@@ -655,7 +657,8 @@ function handlePublishClick(event: MouseEvent) {
 
     publishArticle<{ content_id?: number | string; contentId?: number | string }>({
         title,
-        description: content,
+        description: optionalValue(description),
+        cover: optionalValue(cover),
         content,
         visibility: 1
     }).then((result) => {
@@ -1042,7 +1045,7 @@ function validateProfileFields(fields: { nickname: string; bio: string; email: s
     return errors;
 }
 
-function validatePublishFields(fields: { title: string; content: string }) {
+function validatePublishFields(fields: { title: string; description: string; content: string }) {
     const errors: string[] = [];
     if (!fields.title) {
         errors.push("请输入标题");
@@ -1054,6 +1057,10 @@ function validatePublishFields(fields: { title: string; content: string }) {
 
     if (fields.title.length > 80) {
         errors.push("标题最多 80 字");
+    }
+
+    if (fields.description.length > 255) {
+        errors.push("简介最多 255 字");
     }
 
     if (fields.content.length > 5000) {

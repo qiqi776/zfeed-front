@@ -30,6 +30,19 @@ export function ComposePage() {
                                 type: "text"
                             }),
                             createElement("textarea", {
+                                className: "auth-field min-h-28 resize-none rounded-2xl px-4 py-3 text-[15px] text-on-surface",
+                                maxLength: 255,
+                                name: "description",
+                                placeholder: "写一段简介，方便读者快速了解内容...",
+                                rows: 4
+                            }),
+                            createElement("input", {
+                                className: "auth-field rounded-2xl px-4 py-3 text-[15px] text-on-surface",
+                                name: "cover",
+                                placeholder: "封面 URL，可选",
+                                type: "url"
+                            }),
+                            createElement("textarea", {
                                 className: "auth-field min-h-56 resize-none rounded-2xl px-4 py-3 text-[15px] text-on-surface",
                                 maxLength: 5000,
                                 name: "content",

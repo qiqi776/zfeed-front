@@ -3399,6 +3399,7 @@ describe("App routes", () => {
                 visibility: 1
             })
         })));
+        await waitFor(() => expect(window.location.pathname).toBe("/content/6790"));
     });
 
     it("validates compose title and content before publishing", async () => {
@@ -3413,7 +3414,10 @@ describe("App routes", () => {
 
         render(<App />);
 
-        fireEvent.click(await screen.findByRole("button", { name: "发布" }));
+        const titleInput = await screen.findByPlaceholderText("标题");
+        const composeForm = titleInput.closest('[data-compose-form="true"]');
+        expect(composeForm).not.toBeNull();
+        fireEvent.click(within(composeForm as HTMLElement).getByRole("button", { name: "发布" }));
 
         expect(await screen.findByText("请输入标题")).toBeInTheDocument();
         expect(fetchMock).not.toHaveBeenCalled();
