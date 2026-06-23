@@ -16,6 +16,7 @@ import {
     updateProfile
 } from "./apiClient";
 import { readAuthSession } from "./authStore";
+import { restoreContentInteractionOverride, setContentReactionOverride, type ContentReactionKind } from "./contentInteractionStore";
 import { navigateTo } from "./navigation";
 import { showToast } from "./toast";
 
@@ -167,16 +168,28 @@ function handleActionClick(event: MouseEvent) {
     }
 
     const snapshot = captureButtonState(button);
+    const matchingButtons = findMatchingContentActionButtons(contentId, action.kind);
+    if (!matchingButtons.includes(button)) {
+        matchingButtons.push(button);
+    }
+    const matchingSnapshots = matchingButtons.map((matchingButton) => ({
+        button: matchingButton,
+        snapshot: captureButtonState(matchingButton)
+    }));
+    const nextCount = Math.max(0, getActionCount(button) + (action.nextActive ? 1 : -1));
+    const previousOverride = setContentReactionOverride(contentId, action.kind, action.nextActive, nextCount);
     button.dataset.pending = "true";
     button.disabled = true;
-    applyOptimisticState(button, action);
+    applyOptimisticStateToButtons(matchingButtons, action, nextCount);
 
     const request = action.kind === "like"
         ? action.nextActive ? likeContent({ contentId, contentUserId, scene }) : unlikeContent({ contentId, scene })
         : action.nextActive ? favoriteContent({ contentId, scene }) : unfavoriteContent({ contentId, scene });
 
     request.catch((error: unknown) => {
+        restoreButtonStates(matchingSnapshots);
         restoreButtonState(button, snapshot);
+        restoreContentInteractionOverride(contentId, previousOverride);
         showToast(getContentActionFailureMessage(action));
         if (isAuthError(error)) {
             navigateToLogin();
@@ -1093,24 +1106,32 @@ function restoreButtonState(button: HTMLElement, snapshot: ButtonStateSnapshot) 
     }
 }
 
+function restoreButtonStates(snapshots: Array<{ button: HTMLElement; snapshot: ButtonStateSnapshot }>) {
+    snapshots.forEach(({ button, snapshot }) => restoreButtonState(button, snapshot));
+}
+
 function isFollowButtonText(text: string) {
     const normalizedText = text.trim().replace(/\s+/g, "");
     return normalizedText === "关注" || normalizedText === "关注作者" || normalizedText === "已关注";
 }
 
-function applyOptimisticState(button: HTMLElement, action: { kind: "like" | "favorite"; nextActive: boolean }) {
+function applyOptimisticStateToButtons(buttons: HTMLElement[], action: { kind: ContentReactionKind; nextActive: boolean }, nextCount: number) {
+    buttons.forEach((button) => applyOptimisticState(button, action, nextCount));
+}
+
+function applyOptimisticState(button: HTMLElement, action: { kind: ContentReactionKind; nextActive: boolean }, nextCount: number) {
     if (action.kind === "like") {
         setClassToken(button, "text-error", action.nextActive);
         setClassToken(button, "text-on-surface-variant", !action.nextActive);
         button.setAttribute("aria-label", action.nextActive ? "取消点赞" : "点赞");
-        updateNumericText(findActionValue(button), action.nextActive ? 1 : -1);
+        setActionCount(button, nextCount);
         return;
     }
 
     setClassToken(button, "text-primary", action.nextActive);
     setClassToken(button, "text-on-surface-variant", !action.nextActive);
     button.setAttribute("aria-label", action.nextActive ? "取消收藏" : "收藏");
-    updateNumericText(findActionValue(button), action.nextActive ? 1 : -1);
+    setActionCount(button, nextCount);
 }
 
 function getContentActionFailureMessage(action: { kind: "like" | "favorite"; nextActive: boolean }) {
@@ -1140,6 +1161,22 @@ function isFavoriteActive(button: HTMLElement) {
 function findActionValue(button: HTMLElement) {
     const spans = Array.from(button.querySelectorAll("span"));
     return spans.find((item) => !item.classList.contains("material-symbols-outlined")) ?? null;
+}
+
+function findMatchingContentActionButtons(contentId: string, kind: ContentReactionKind) {
+    return Array.from(document.querySelectorAll<HTMLButtonElement>("button[data-content-id]"))
+        .filter((button) => button.dataset.contentId === contentId && resolveContentAction(button)?.kind === kind);
+}
+
+function getActionCount(button: HTMLElement) {
+    return readLeadingNumber(findActionValue(button)?.textContent ?? "") ?? 0;
+}
+
+function setActionCount(button: HTMLElement, count: number) {
+    const value = findActionValue(button);
+    if (value) {
+        value.textContent = String(count);
+    }
 }
 
 function updateNumericText(element: HTMLElement | null, delta: number) {

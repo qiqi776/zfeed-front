@@ -1,6 +1,7 @@
 import { createElement, useEffect, useState } from "react";
 import { getRecommendFeed } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
+import { useContentInteractionVersion } from "../runtime/contentInteractionStore";
 import { PageShell } from "../runtime/PageShell";
 import { renderUserAvatar } from "./avatar";
 import { cacheHomeRailItems, homeStyles, renderFeedCard, renderHomeHeader, renderLeftRail, renderRightRail } from "./feedShell";
@@ -39,6 +40,7 @@ const recommendFeedPageSize = 20;
 
 export function HomePage() {
     const [state, setState] = useState<RecommendFeedState>({ status: "loading" });
+    useContentInteractionVersion();
 
     useEffect(() => {
         let isCurrent = true;

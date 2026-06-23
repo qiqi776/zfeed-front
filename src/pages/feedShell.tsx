@@ -1,5 +1,6 @@
 import { createElement } from "react";
 import { readAuthSession } from "../runtime/authStore";
+import { mergeContentInteractionState } from "../runtime/contentInteractionStore";
 import { renderUserAvatar } from "./avatar";
 import { getContentScene } from "./contentScene";
 import { sharedGlassStyles } from "./sharedGlassStyles";
@@ -198,22 +199,23 @@ export function renderRightRail(items: FeedRailContentItem[] = []) {
 }
 
 export function renderFeedCard(item: FeedCardItem) {
-    const contentId = String(item.content_id);
-    const authorId = String(item.author_id);
-    const scene = getContentScene(item.content_type);
+    const syncedItem = mergeContentInteractionState(item);
+    const contentId = String(syncedItem.content_id);
+    const authorId = String(syncedItem.author_id);
+    const scene = getContentScene(syncedItem.content_type);
 
     return createElement("article", { className: "glass-panel rounded-3xl p-6 hover:bg-white/50 hover-lift shine-effect", "data-content-scene": scene, key: contentId },
         createElement("div", { className: "relative z-20 flex items-center justify-between mb-4" },
             createElement("div", { className: "flex min-w-0 items-center gap-3" },
                 renderUserAvatar(
-                    { avatar: item.author_avatar, nickname: item.author_name, userId: item.author_id },
+                    { avatar: syncedItem.author_avatar, nickname: syncedItem.author_name, userId: syncedItem.author_id },
                     "w-10 h-10 rounded-full border border-white shadow-sm object-cover",
-                    { alt: item.author_name, textClassName: "text-[13px]" }
+                    { alt: syncedItem.author_name, textClassName: "text-[13px]" }
                 ),
                 createElement("div", { className: "min-w-0" },
-                    createElement("a", { className: "block truncate font-headline-md text-[16px] hover:text-primary transition-colors", href: `/user/${authorId}` }, item.author_name),
+                    createElement("a", { className: "block truncate font-headline-md text-[16px] hover:text-primary transition-colors", href: `/user/${authorId}` }, syncedItem.author_name),
                     createElement("div", { className: "text-meta-xs text-on-surface-variant flex items-center gap-2" },
-                        createElement("span", null, formatPublishedAt(item.published_at))
+                        createElement("span", null, formatPublishedAt(syncedItem.published_at))
                     )
                 )
             ),
@@ -222,41 +224,41 @@ export function renderFeedCard(item: FeedCardItem) {
             )
         ),
         createElement("a", { className: "article-anchor", href: `/content/${contentId}` },
-            createElement("h2", { className: "break-words font-headline-md text-on-surface mb-2 relative z-20 hover:text-primary transition-colors cursor-pointer" }, item.title),
-            item.description
-                ? createElement("p", { className: "break-words font-body-md text-on-surface-variant mb-4 line-clamp-3 relative z-20" }, item.description)
+            createElement("h2", { className: "break-words font-headline-md text-on-surface mb-2 relative z-20 hover:text-primary transition-colors cursor-pointer" }, syncedItem.title),
+            syncedItem.description
+                ? createElement("p", { className: "break-words font-body-md text-on-surface-variant mb-4 line-clamp-3 relative z-20" }, syncedItem.description)
                 : null
         ),
-        item.cover_url
+        syncedItem.cover_url
             ? createElement("a", { href: `/content/${contentId}` },
-                createElement("img", { alt: "", className: "relative z-20 mt-4 aspect-[16/9] w-full rounded-2xl border border-white/45 object-cover shadow-sm", src: item.cover_url })
+                createElement("img", { alt: "", className: "relative z-20 mt-4 aspect-[16/9] w-full rounded-2xl border border-white/45 object-cover shadow-sm", src: syncedItem.cover_url })
             )
             : null,
         createElement("div", { className: "mt-5 flex flex-wrap items-center gap-4 relative z-20" },
             createElement("button", {
-                "aria-label": item.is_liked ? "取消点赞" : "点赞",
-                className: `flex items-center gap-1 ${item.is_liked ? "text-error" : "text-on-surface-variant"} hover:text-error active:scale-95 transition-colors`,
+                "aria-label": syncedItem.is_liked ? "取消点赞" : "点赞",
+                className: `flex items-center gap-1 ${syncedItem.is_liked ? "text-error" : "text-on-surface-variant"} hover:text-error active:scale-95 transition-colors`,
                 "data-content-id": contentId,
                 "data-content-scene": scene,
                 "data-content-user-id": authorId,
                 type: "button"
             },
                 createElement("span", { className: "material-symbols-outlined text-[20px]" }, "favorite"),
-                createElement("span", { className: "font-meta-xs" }, formatCount(item.like_count))
+                createElement("span", { className: "font-meta-xs" }, formatCount(syncedItem.like_count))
             ),
             createElement("button", {
-                "aria-label": item.is_favorited ? "取消收藏" : "收藏",
-                className: `flex items-center gap-1 ${item.is_favorited ? "text-primary" : "text-on-surface-variant"} hover:text-primary active:scale-95 transition-colors`,
+                "aria-label": syncedItem.is_favorited ? "取消收藏" : "收藏",
+                className: `flex items-center gap-1 ${syncedItem.is_favorited ? "text-primary" : "text-on-surface-variant"} hover:text-primary active:scale-95 transition-colors`,
                 "data-content-id": contentId,
                 "data-content-scene": scene,
                 type: "button"
             },
                 createElement("span", { className: "material-symbols-outlined text-[20px]" }, "bookmark"),
-                createElement("span", { className: "font-meta-xs" }, formatCount(item.favorite_count))
+                createElement("span", { className: "font-meta-xs" }, formatCount(syncedItem.favorite_count))
             ),
             createElement("a", { className: "flex items-center gap-1 text-on-surface-variant hover:text-primary active:scale-95 transition-colors", href: `/content/${contentId}` },
                 createElement("span", { className: "material-symbols-outlined text-[20px]" }, "chat_bubble"),
-                createElement("span", { className: "font-meta-xs" }, formatCount(item.comment_count))
+                createElement("span", { className: "font-meta-xs" }, formatCount(syncedItem.comment_count))
             )
         )
     );

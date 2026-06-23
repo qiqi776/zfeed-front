@@ -1,6 +1,7 @@
 import { createElement, useEffect, useState } from "react";
 import { ApiError, getMe, getUserFavoriteFeed, getUserFollowers, getUserProfile, getUserPublishedFeed } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
+import { mergeContentInteractionState, useContentInteractionVersion } from "../runtime/contentInteractionStore";
 import { PageShell } from "../runtime/PageShell";
 import { renderUserAvatar } from "./avatar";
 import { getContentScene } from "./contentScene";
@@ -152,6 +153,7 @@ function MeProfilePage() {
     const [favoriteFeed, setFavoriteFeed] = useState<UserPublishedFeedState>({ status: "loading" });
     const [followers, setFollowers] = useState<ProfileRelationState>({ status: "loading" });
     const [activeTab, setActiveTab] = useState<ProfileTab>("published");
+    useContentInteractionVersion();
 
     useEffect(() => {
         if (!readAuthSession()) {
@@ -214,6 +216,7 @@ function UserProfilePage({ routeUserId }: { routeUserId: string }) {
     const [favoriteFeed, setFavoriteFeed] = useState<UserPublishedFeedState>({ status: "loading" });
     const [followers, setFollowers] = useState<ProfileRelationState>({ status: "loading" });
     const [activeTab, setActiveTab] = useState<ProfileTab>("published");
+    useContentInteractionVersion();
 
     useEffect(() => {
         let isCurrent = true;
@@ -381,9 +384,10 @@ function renderUserReadyPage(profile: UserProfile, tabs: ProfileTabsState) {
 }
 
 function renderUserPublishedCard(item: UserPublishedFeedItem) {
-    const contentId = String(item.content_id);
-    const authorId = String(item.author_id);
-    const scene = getContentScene(item.content_type);
+    const syncedItem = mergeContentInteractionState(item);
+    const contentId = String(syncedItem.content_id);
+    const authorId = String(syncedItem.author_id);
+    const scene = getContentScene(syncedItem.content_type);
 
     return createElement("article", {
         className: "glass-panel hover-lift shine-effect rounded-3xl p-5 md:p-6",
@@ -392,59 +396,59 @@ function renderUserPublishedCard(item: UserPublishedFeedItem) {
     },
         createElement("div", { className: "relative z-20 flex min-w-0 items-start gap-3" },
             renderUserAvatar(
-                { avatar: item.author_avatar, nickname: item.author_name, userId: item.author_id },
+                { avatar: syncedItem.author_avatar, nickname: syncedItem.author_name, userId: syncedItem.author_id },
                 "h-11 w-11 shrink-0 rounded-full border border-white object-cover shadow-sm",
-                { alt: item.author_name, textClassName: "text-[14px]" }
+                { alt: syncedItem.author_name, textClassName: "text-[14px]" }
             ),
             createElement("div", { className: "min-w-0 flex-1" },
                 createElement("div", { className: "flex min-w-0 flex-wrap items-center gap-2" },
-                    createElement("a", { className: "truncate font-headline-md text-[15px] text-on-surface hover:text-primary", href: `/user/${authorId}` }, item.author_name),
+                    createElement("a", { className: "truncate font-headline-md text-[15px] text-on-surface hover:text-primary", href: `/user/${authorId}` }, syncedItem.author_name),
                     createElement("span", { className: "font-meta-xs text-on-surface-variant" }, "·"),
-                    createElement("span", { className: "font-meta-xs text-on-surface-variant" }, formatPublishedAt(item.published_at))
+                    createElement("span", { className: "font-meta-xs text-on-surface-variant" }, formatPublishedAt(syncedItem.published_at))
                 ),
                 createElement("a", { className: "mt-3 block", href: `/content/${contentId}` },
-                    createElement("h2", { className: "break-words font-display text-[22px] font-bold leading-tight text-on-surface md:text-[26px]" }, item.title),
-                    item.description
-                        ? createElement("p", { className: "mt-3 line-clamp-3 break-words text-[15px] leading-7 text-on-surface-variant" }, item.description)
+                    createElement("h2", { className: "break-words font-display text-[22px] font-bold leading-tight text-on-surface md:text-[26px]" }, syncedItem.title),
+                    syncedItem.description
+                        ? createElement("p", { className: "mt-3 line-clamp-3 break-words text-[15px] leading-7 text-on-surface-variant" }, syncedItem.description)
                         : null
                 ),
-                item.cover_url
+                syncedItem.cover_url
                     ? createElement("a", { href: `/content/${contentId}` },
                         createElement("img", {
                             alt: "",
                             className: "mt-4 aspect-[16/9] w-full rounded-2xl border border-white/45 object-cover shadow-sm",
-                            src: item.cover_url
+                            src: syncedItem.cover_url
                         })
                     )
                     : null,
                 createElement("div", { className: "mt-5 flex flex-wrap items-center gap-3" },
                     createElement("button", {
-                        "aria-label": item.is_liked ? "取消点赞" : "点赞",
-                        className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${item.is_liked ? "text-error" : "text-on-surface-variant"}`,
+                        "aria-label": syncedItem.is_liked ? "取消点赞" : "点赞",
+                        className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${syncedItem.is_liked ? "text-error" : "text-on-surface-variant"}`,
                         "data-content-id": contentId,
                         "data-content-scene": scene,
                         "data-content-user-id": authorId,
                         type: "button"
                     },
                         createElement("span", { className: "material-symbols-outlined text-[18px]" }, "favorite"),
-                        createElement("span", null, formatPublishedCount(item.like_count))
+                        createElement("span", null, formatPublishedCount(syncedItem.like_count))
                     ),
                     createElement("button", {
-                        "aria-label": item.is_favorited ? "取消收藏" : "收藏",
-                        className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${item.is_favorited ? "text-primary" : "text-on-surface-variant"}`,
+                        "aria-label": syncedItem.is_favorited ? "取消收藏" : "收藏",
+                        className: `glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm active:scale-95 transition-all duration-300 ${syncedItem.is_favorited ? "text-primary" : "text-on-surface-variant"}`,
                         "data-content-id": contentId,
                         "data-content-scene": scene,
                         type: "button"
                     },
                         createElement("span", { className: "material-symbols-outlined text-[18px]" }, "bookmark"),
-                        createElement("span", null, formatPublishedCount(item.favorite_count))
+                        createElement("span", null, formatPublishedCount(syncedItem.favorite_count))
                     ),
                     createElement("a", {
                         className: "glass-button-ghost rounded-full px-4 py-2 flex items-center gap-2 font-label-sm text-on-surface-variant active:scale-95 transition-all duration-300",
                         href: `/content/${contentId}`
                     },
                         createElement("span", { className: "material-symbols-outlined text-[18px]" }, "chat_bubble"),
-                        createElement("span", null, formatPublishedCount(item.comment_count))
+                        createElement("span", null, formatPublishedCount(syncedItem.comment_count))
                     )
                 )
             )

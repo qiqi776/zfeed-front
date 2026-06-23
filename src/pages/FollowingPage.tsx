@@ -1,6 +1,7 @@
 import { createElement, useEffect, useState } from "react";
 import { getFollowFeed } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
+import { useContentInteractionVersion } from "../runtime/contentInteractionStore";
 import { PageShell } from "../runtime/PageShell";
 import { type FeedRailContentItem, getCachedHomeRailItems, homeStyles, renderFeedCard, renderHomeHeader, renderLeftRail, renderRightRail } from "./feedShell";
 import { PageState } from "./PageState";
@@ -38,6 +39,7 @@ const followFeedPageSize = 20;
 
 export function FollowingPage() {
     const [state, setState] = useState<FollowFeedState>(() => readAuthSession() ? { status: "loading" } : { status: "auth-required" });
+    useContentInteractionVersion();
 
     useEffect(() => {
         if (!readAuthSession()) {

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { resetContentInteractionState } from "./runtime/contentInteractionStore";
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
     return new Response(JSON.stringify(body), {
@@ -235,12 +236,14 @@ function respondToProfileListRequest(input: RequestInfo | URL) {
 describe("App routes", () => {
     beforeEach(() => {
         window.localStorage.clear();
+        resetContentInteractionState();
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
     });
 
     afterEach(() => {
         window.localStorage.clear();
+        resetContentInteractionState();
         vi.unstubAllGlobals();
     });
 
@@ -2226,6 +2229,68 @@ describe("App routes", () => {
             }),
             body: JSON.stringify({ content_id: "3001", content_user_id: "4001", scene: "ARTICLE" })
         })));
+    });
+
+    it("keeps liked recommendation count synced when opening stale detail data", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "like-sync-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (isRecommendFeedRequest(input)) {
+                return jsonResponse(recommendFeedPayload([
+                    defaultRecommendFeedItem({
+                        content_id: 3001,
+                        author_id: 4001,
+                        author_name: "同步作者",
+                        title: "需要同步点赞的内容",
+                        like_count: 6,
+                        is_liked: false,
+                        is_favorited: false
+                    })
+                ]));
+            }
+
+            if (isContentDetailRequest(input)) {
+                return jsonResponse(contentDetailPayload({
+                    content_id: "3001",
+                    author_id: "4001",
+                    author_name: "同步作者",
+                    title: "需要同步点赞的内容",
+                    like_count: 6,
+                    is_liked: false
+                }));
+            }
+
+            if (isCommentListRequest(input)) {
+                return jsonResponse(commentListPayload([]));
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/home");
+
+        render(<App />);
+
+        const heading = await screen.findByRole("heading", { name: "需要同步点赞的内容" });
+        const article = heading.closest("article");
+        expect(article).not.toBeNull();
+        const likeButton = within(article as HTMLElement).getByRole("button", { name: "点赞" });
+
+        fireEvent.click(likeButton);
+
+        expect(likeButton).toHaveAttribute("aria-label", "取消点赞");
+        expect(within(likeButton).getByText("7")).toBeInTheDocument();
+
+        fireEvent.click(heading);
+
+        await waitFor(() => expect(window.location.pathname).toBe("/content/3001"));
+        const detailArticle = (await screen.findByRole("heading", { name: "需要同步点赞的内容" })).closest("article");
+        expect(detailArticle).not.toBeNull();
+        const detailLikeButton = within(detailArticle as HTMLElement).getByRole("button", { name: "取消点赞" });
+        expect(within(detailLikeButton).getByText("7")).toBeInTheDocument();
     });
 
     it("uses Bearer writes for liked content and rolls back when the API fails", async () => {

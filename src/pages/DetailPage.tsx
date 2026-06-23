@@ -1,6 +1,7 @@
 import { createElement, useEffect, useState } from "react";
 import { getContentDetail, listComments } from "../runtime/apiClient";
 import { readAuthSession } from "../runtime/authStore";
+import { mergeContentInteractionState, useContentInteractionVersion } from "../runtime/contentInteractionStore";
 import { PageShell } from "../runtime/PageShell";
 import { renderUserAvatar } from "./avatar";
 import { getContentScene } from "./contentScene";
@@ -74,6 +75,7 @@ export function DetailPage() {
 function DynamicContentDetailPage({ contentId }: { contentId: string }) {
     const [state, setState] = useState<DynamicDetailState>({ status: "loading" });
     const [commentsState, setCommentsState] = useState<CommentListState>({ status: "loading" });
+    useContentInteractionVersion();
 
     useEffect(() => {
         let isCurrent = true;
@@ -169,7 +171,7 @@ function renderDynamicDetailState(state: DynamicDetailState, commentsState: Comm
         });
     }
 
-    const detail = withSyncedCommentCount(state.detail, commentsState);
+    const detail = mergeContentInteractionState(withSyncedCommentCount(state.detail, commentsState));
 
     return createElement("div", { className: "mt-6" },
         renderDynamicDetail(detail),
