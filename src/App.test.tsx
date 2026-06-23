@@ -2102,12 +2102,106 @@ describe("App routes", () => {
         expect(document.querySelector("script")).toBeNull();
         expect(fetchMock).toHaveBeenCalledWith("/v1/search/contents", expect.objectContaining({
             method: "POST",
-            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "hybrid" })
+            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "latest" })
         }));
         expect(fetchMock).toHaveBeenCalledWith("/v1/search/users", expect.objectContaining({
             method: "POST",
-            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "hybrid" })
+            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "latest" })
         }));
+    });
+
+    it("keeps content search visible when user search fails", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/search/contents") {
+                return jsonResponse({
+                    items: [{
+                        content_id: 1001,
+                        content_type: 1,
+                        author_id: 1001,
+                        author_name: "Jax Lee",
+                        author_avatar: "https://example.com/jax.png",
+                        title: "可用的内容搜索结果",
+                        description: "用户搜索接口失败时也应该展示内容。",
+                        cover_url: "",
+                        published_at: 1765670400
+                    }]
+                });
+            }
+
+            if (input === "/v1/search/users") {
+                return jsonResponse({ message: "搜索快照未开启" }, { status: 400 });
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/search?q=AI");
+
+        render(<App />);
+
+        expect(await screen.findByRole("heading", { name: "可用的内容搜索结果" })).toBeInTheDocument();
+        expect(screen.queryByText("搜索失败")).not.toBeInTheDocument();
+    });
+
+    it("renders search results as an actionable feed stream", async () => {
+        window.localStorage.setItem("zfeed.auth.session", JSON.stringify({
+            token: "search-feed-token",
+            expiredAt: Math.floor(Date.now() / 1000) + 3600,
+            user: { userId: 7 }
+        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/search/contents") {
+                return jsonResponse({
+                    items: [{
+                        content_id: 1001,
+                        content_type: 1,
+                        author_id: 1001,
+                        author_name: "Jax Lee",
+                        author_avatar: "https://example.com/jax.png",
+                        title: "搜索流内容",
+                        description: "这条内容来自搜索信息流。",
+                        cover_url: "",
+                        published_at: 1765670400,
+                        like_count: 6,
+                        favorite_count: 2,
+                        comment_count: 1,
+                        is_liked: false,
+                        is_favorited: false
+                    }]
+                });
+            }
+
+            if (input === "/v1/search/users") {
+                return jsonResponse({ items: [] });
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/search?q=AI");
+
+        render(<App />);
+
+        const heading = await screen.findByRole("heading", { name: "搜索流内容" });
+        const article = heading.closest("article");
+        expect(article).not.toBeNull();
+        expect(screen.getByText("频道").closest("aside")).toHaveClass("lg:col-span-2");
+        expect(screen.getByRole("heading", { name: "今日数据" }).closest("aside")).toHaveClass("lg:col-span-3");
+        const leftRail = screen.getByText("频道").closest("aside") as HTMLElement;
+        expect(within(leftRail).getByRole("link", { name: /搜索/ })).toHaveClass("text-primary");
+
+        const likeButton = within(article as HTMLElement).getByRole("button", { name: "点赞" });
+        fireEvent.click(likeButton);
+
+        expect(likeButton).toHaveAttribute("aria-label", "取消点赞");
+        expect(within(likeButton).getByText("7")).toBeInTheDocument();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/v1/interaction/like", expect.objectContaining({
+            method: "POST",
+            headers: expect.objectContaining({
+                Authorization: "Bearer search-feed-token"
+            }),
+            body: JSON.stringify({ content_id: "1001", content_user_id: "1001", scene: "ARTICLE" })
+        })));
     });
 
     it("keeps long search result metadata from overflowing cards", async () => {

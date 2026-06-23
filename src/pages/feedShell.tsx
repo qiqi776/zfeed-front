@@ -28,7 +28,10 @@ export type FeedCardItem = FeedRailContentItem & {
     is_favorited?: boolean;
 };
 
-type HomeChannel = "home" | "following";
+type HomeChannel = "home" | "following" | "search";
+type HomeHeaderOptions = {
+    showSearch?: boolean;
+};
 
 type SuggestedFeedAuthor = {
     userId: string;
@@ -116,7 +119,9 @@ export function getCachedHomeRailItems() {
     return cachedHomeRailItems;
 }
 
-export function renderHomeHeader(activeChannel: HomeChannel = "home") {
+export function renderHomeHeader(activeChannel: HomeChannel = "home", options: HomeHeaderOptions = {}) {
+    const showSearch = options.showSearch !== false;
+
     return createElement("header", { className: "fixed top-0 w-full z-50 flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border-b border-white/20 saturate-[180%] shadow-sm border-white/30 shadow-md" },
         createElement("div", { className: "flex items-center gap-4" },
             createElement("a", { className: "flex items-center gap-3 hover:opacity-80 transition-opacity duration-300", href: "/home" },
@@ -125,10 +130,10 @@ export function renderHomeHeader(activeChannel: HomeChannel = "home") {
                 ),
                 createElement("span", { className: "font-display text-[24px] tracking-tight font-bold text-primary dark:text-primary-fixed" }, "zfeed")
             ),
-            createElement("div", { className: "hidden md:flex ml-8 relative w-96 group md:ml-16 search-shell overflow-hidden" },
+            showSearch ? createElement("div", { className: "hidden md:flex ml-8 relative w-96 group md:ml-16 search-shell overflow-hidden" },
                 createElement("span", { className: "material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] group-focus-within:text-primary transition-colors duration-300" }, "search"),
                 createElement("input", { className: "glass-input w-full pl-10 pr-4 rounded-full font-body-md text-on-surface placeholder:text-on-surface-variant/70 border-white/40 bg-white/30 backdrop-blur-md focus:bg-white/60 transition-colors py-2.5", placeholder: "搜索内容、创作者或话题", type: "text" })
-            )
+            ) : null
         ),
         createElement("nav", { className: "hidden md:flex items-center absolute left-1/2 -translate-x-1/2 gap-5" },
             renderTopChannel("/home", "推荐", activeChannel === "home"),
@@ -154,7 +159,7 @@ export function renderLeftRail(activeRail: HomeChannel = "home") {
             createElement("nav", { className: "flex flex-col gap-1" },
                 renderRailLink("/home", "home", "推荐", activeRail === "home"),
                 renderRailLink("/following", "person_add", "关注", activeRail === "following", true),
-                renderRailLink("/search", "search", "搜索"),
+                renderRailLink("/search", "search", "搜索", activeRail === "search"),
                 renderRailLink("/settings", "settings", "设置")
             ),
             createElement("div", { className: "flex flex-col gap-2" },
@@ -213,7 +218,7 @@ export function renderFeedCard(item: FeedCardItem) {
                     { alt: syncedItem.author_name, textClassName: "text-[13px]" }
                 ),
                 createElement("div", { className: "min-w-0" },
-                    createElement("a", { className: "block truncate font-headline-md text-[16px] hover:text-primary transition-colors", href: `/user/${authorId}` }, syncedItem.author_name),
+                    createElement("a", { className: "block break-words font-headline-md text-[16px] hover:text-primary transition-colors", href: `/user/${authorId}` }, syncedItem.author_name),
                     createElement("div", { className: "text-meta-xs text-on-surface-variant flex items-center gap-2" },
                         createElement("span", null, formatPublishedAt(syncedItem.published_at))
                     )
