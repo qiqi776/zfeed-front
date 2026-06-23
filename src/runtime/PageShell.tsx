@@ -711,12 +711,31 @@ function handleSearchSubmit(event: KeyboardEvent) {
     }
 
     const query = event.target.value.trim();
+    const searchTarget = getSearchTarget(event.target);
     if (!query) {
-        navigateTo("/search");
+        navigateTo(getSearchPath("", searchTarget));
         return;
     }
 
-    navigateTo(`/search?${new URLSearchParams({ q: query }).toString()}`);
+    navigateTo(getSearchPath(query, searchTarget));
+}
+
+function getSearchTarget(input: HTMLInputElement) {
+    const target = input.dataset.searchTarget;
+    return target === "content" || target === "author" ? target : "";
+}
+
+function getSearchPath(query: string, target: string) {
+    const params = new URLSearchParams();
+    if (query) {
+        params.set("q", query);
+    }
+    if (target && target !== "content") {
+        params.set("type", target);
+    }
+
+    const search = params.toString();
+    return search ? `/search?${search}` : "/search";
 }
 
 function isHomeComposerInput(input: HTMLInputElement) {

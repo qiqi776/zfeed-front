@@ -2052,7 +2052,7 @@ describe("App routes", () => {
         expect(window.location.search).toBe("?q=AI+%E5%88%9B%E4%BD%9C");
     });
 
-    it("loads content and user results from the search query", async () => {
+    it("loads content results from the search query by default", async () => {
         const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
             if (input === "/v1/search/contents") {
                 return jsonResponse({
@@ -2097,20 +2097,87 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByText("AI 搜索结果 <script>alert(1)</script>")).toBeInTheDocument();
-        expect(screen.getByText("Nora <admin>")).toBeInTheDocument();
+        expect(screen.queryByText("Nora <admin>")).not.toBeInTheDocument();
         expect(screen.queryByText("输入关键词开始搜索")).not.toBeInTheDocument();
         expect(document.querySelector("script")).toBeNull();
+        expect(screen.getByRole("button", { name: "内容" })).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", { name: "作者" })).toHaveAttribute("aria-pressed", "false");
         expect(fetchMock).toHaveBeenCalledWith("/v1/search/contents", expect.objectContaining({
             method: "POST",
             body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "latest" })
         }));
+        expect(fetchMock).not.toHaveBeenCalledWith("/v1/search/users", expect.anything());
+    });
+
+    it("switches the search target between content and authors", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/search/contents") {
+                return jsonResponse({
+                    items: [{
+                        content_id: 1001,
+                        content_type: 1,
+                        author_id: 1001,
+                        author_name: "Jax Lee",
+                        author_avatar: "",
+                        title: "不应该出现的内容结果",
+                        cover_url: "",
+                        published_at: 1765670400
+                    }]
+                });
+            }
+
+            if (input === "/v1/search/users") {
+                return jsonResponse({
+                    items: [{
+                        user_id: 1002,
+                        nickname: "作者搜索结果",
+                        avatar: "",
+                        bio: "这个结果来自作者搜索。",
+                        is_following: false
+                    }]
+                });
+            }
+
+            return jsonResponse({});
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/search?q=AI&type=author");
+
+        render(<App />);
+
+        expect(await screen.findByText("作者搜索结果")).toBeInTheDocument();
+        expect(screen.queryByText("不应该出现的内容结果")).not.toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "内容" })).toHaveAttribute("aria-pressed", "false");
+        expect(screen.getByRole("button", { name: "作者" })).toHaveAttribute("aria-pressed", "true");
+        expect(fetchMock).not.toHaveBeenCalledWith("/v1/search/contents", expect.anything());
         expect(fetchMock).toHaveBeenCalledWith("/v1/search/users", expect.objectContaining({
             method: "POST",
-            body: JSON.stringify({ query: "AI 创作", page_size: 10, mode: "latest" })
+            body: JSON.stringify({ query: "AI", page_size: 10, mode: "latest" })
         }));
     });
 
-    it("keeps content search visible when user search fails", async () => {
+    it("keeps the selected search target when submitting the search box", async () => {
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            if (input === "/v1/search/users") {
+                return jsonResponse({ items: [] });
+            }
+
+            return jsonResponse({ items: [] });
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        window.history.pushState({}, "", "/search?q=AI&type=author");
+
+        render(<App />);
+
+        const searchBox = await screen.findByPlaceholderText("搜索内容、创作者或话题");
+        fireEvent.change(searchBox, { target: { value: "Nora" } });
+        fireEvent.keyDown(searchBox, { key: "Enter" });
+
+        await waitFor(() => expect(window.location.pathname).toBe("/search"));
+        expect(window.location.search).toBe("?q=Nora&type=author");
+    });
+
+    it("loads content search without depending on author search", async () => {
         const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
             if (input === "/v1/search/contents") {
                 return jsonResponse({
@@ -2142,6 +2209,7 @@ describe("App routes", () => {
         expect(await screen.findByRole("heading", { name: "可用的内容搜索结果" })).toBeInTheDocument();
         expect(document.querySelector('[data-page-state="error"]')).toBeNull();
         expect(screen.queryByText("搜索失败")).not.toBeInTheDocument();
+        expect(fetchMock).not.toHaveBeenCalledWith("/v1/search/users", expect.anything());
     });
 
     it("renders search results as an actionable feed stream", async () => {
@@ -2207,7 +2275,6 @@ describe("App routes", () => {
 
     it("keeps long search result metadata from overflowing cards", async () => {
         const longAuthorName = "VeryLongAuthorNameWithoutSpaces".repeat(4);
-        const longNickname = "VeryLongCreatorNicknameWithoutSpaces".repeat(4);
         const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
             if (input === "/v1/search/contents") {
                 return jsonResponse({
@@ -2224,18 +2291,6 @@ describe("App routes", () => {
                 });
             }
 
-            if (input === "/v1/search/users") {
-                return jsonResponse({
-                    items: [{
-                        user_id: 1002,
-                        nickname: longNickname,
-                        avatar: "",
-                        bio: "研究 AI 工具",
-                        is_following: false
-                    }]
-                });
-            }
-
             return jsonResponse({});
         });
         vi.stubGlobal("fetch", fetchMock);
@@ -2244,7 +2299,6 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByText(longAuthorName)).toHaveClass("break-words");
-        expect(screen.getByText(longNickname)).toHaveClass("break-words");
     });
 
     it("validates search query length before requesting results", async () => {

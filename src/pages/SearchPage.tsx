@@ -32,11 +32,15 @@ type SearchViewState =
     | { status: "error" }
     | { status: "ready"; contents: SearchContentItem[]; users: SearchUserItem[] };
 
+type SearchTarget = "content" | "author";
+
 const maxSearchQueryLength = 50;
 const searchPageSize = 10;
 
 export function SearchPage() {
-    const query = new URLSearchParams(window.location.search).get("q")?.trim() ?? "";
+    const searchParams = new URLSearchParams(window.location.search);
+    const query = searchParams.get("q")?.trim() ?? "";
+    const searchTarget = getSearchTarget(searchParams.get("type"));
     const [viewState, setViewState] = useState<SearchViewState>(() => getInitialSearchState(query));
     useContentInteractionVersion();
 
@@ -47,30 +51,30 @@ export function SearchPage() {
 
         let isCurrent = true;
 
-        Promise.allSettled([
-            searchContents<SearchContentsResponse>({ query, page_size: searchPageSize, mode: "latest" }),
-            searchUsers<SearchUsersResponse>({ query, page_size: searchPageSize, mode: "latest" })
-        ]).then(([contentResult, userResult]) => {
-            if (!isCurrent) {
-                return;
-            }
+        const request = searchTarget === "author"
+            ? searchUsers<SearchUsersResponse>({ query, page_size: searchPageSize, mode: "latest" })
+            : searchContents<SearchContentsResponse>({ query, page_size: searchPageSize, mode: "latest" });
 
-            if (contentResult.status === "rejected" && userResult.status === "rejected") {
-                setViewState({ status: "error" });
+        request.then((result) => {
+            if (!isCurrent) {
                 return;
             }
 
             setViewState({
                 status: "ready",
-                contents: contentResult.status === "fulfilled" ? contentResult.value.items ?? [] : [],
-                users: userResult.status === "fulfilled" ? userResult.value.items ?? [] : []
+                contents: searchTarget === "content" ? (result as SearchContentsResponse).items ?? [] : [],
+                users: searchTarget === "author" ? (result as SearchUsersResponse).items ?? [] : []
             });
+        }).catch(() => {
+            if (isCurrent) {
+                setViewState({ status: "error" });
+            }
         });
 
         return () => {
             isCurrent = false;
         };
-    }, [query]);
+    }, [query, searchTarget]);
 
     return createElement(
         PageShell,
@@ -86,8 +90,8 @@ export function SearchPage() {
                 createElement("div", { className: "grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-5" },
                     renderLeftRail("search"),
                     createElement("main", { className: "feed-transition col-span-4 md:col-span-8 lg:col-span-7 flex flex-col gap-6 pb-24 feed-ready" },
-                        renderSearchPanel(query),
-                        renderSearchState(query, viewState)
+                        renderSearchPanel(query, searchTarget),
+                        renderSearchState(query, searchTarget, viewState)
                     ),
                     renderRightRail(getCachedHomeRailItems())
                 )
@@ -108,7 +112,7 @@ function getInitialSearchState(query: string): SearchViewState {
     return { status: "loading" };
 }
 
-function renderSearchPanel(query: string) {
+function renderSearchPanel(query: string, searchTarget: SearchTarget) {
     return createElement("section", { className: "glass-panel rounded-2xl p-5 hover-lift shine-effect" },
         createElement("div", { className: "flex flex-wrap items-end justify-between gap-3" },
             createElement("div", null,
@@ -124,21 +128,41 @@ function renderSearchPanel(query: string) {
                     autoFocus: true,
                     className: "w-full bg-transparent border-none text-body-md focus:ring-0 placeholder:text-on-surface-variant/60 transition-all duration-300",
                     defaultValue: query,
+                    "data-search-target": searchTarget,
                     maxLength: 50,
                     placeholder: "搜索内容、创作者或话题",
                     type: "search"
                 })
             )
+        ),
+        createElement("div", { className: "mt-4 inline-flex rounded-full border border-white/60 bg-white/30 p-1 shadow-sm" },
+            renderSearchTargetButton("content", "article", "内容", query, searchTarget),
+            renderSearchTargetButton("author", "person", "作者", query, searchTarget)
         )
     );
 }
 
-function renderSearchState(query: string, viewState: SearchViewState) {
+function renderSearchTargetButton(target: SearchTarget, icon: string, label: string, query: string, activeTarget: SearchTarget) {
+    const active = target === activeTarget;
+
+    return createElement("a", {
+        "aria-label": label,
+        "aria-pressed": active ? "true" : "false",
+        className: `inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-[13px] font-semibold transition-all duration-200 ${active ? "bg-white/70 text-primary shadow-sm" : "text-on-surface-variant hover:bg-white/45 hover:text-primary"}`,
+        href: getSearchHref(query, target),
+        role: "button"
+    },
+        createElement("span", { className: "material-symbols-outlined text-[18px]" }, icon),
+        label
+    );
+}
+
+function renderSearchState(query: string, searchTarget: SearchTarget, viewState: SearchViewState) {
     if (!query) {
         return createElement(PageState, {
             state: "empty",
             title: "输入关键词开始搜索",
-            description: "支持搜索内容、创作者或话题。",
+            description: "支持搜索内容、作者或话题。",
             className: "glass-panel rounded-3xl p-5"
         });
     }
@@ -156,7 +180,7 @@ function renderSearchState(query: string, viewState: SearchViewState) {
         return createElement(PageState, {
             state: "loading",
             title: "正在搜索",
-            description: "正在检索内容和创作者。",
+            description: searchTarget === "author" ? "正在检索作者。" : "正在检索内容。",
             className: "glass-panel rounded-3xl p-5"
         });
     }
@@ -178,7 +202,7 @@ function renderSearchState(query: string, viewState: SearchViewState) {
         return createElement(PageState, {
             state: "empty",
             title: "没有找到相关结果",
-            description: `换个关键词搜索“${query}”。`,
+            description: `换个关键词搜索${searchTarget === "author" ? "作者" : "内容"}“${query}”。`,
             className: "glass-panel rounded-3xl p-5"
         });
     }
@@ -193,12 +217,28 @@ function renderSearchState(query: string, viewState: SearchViewState) {
         ) : null,
         viewState.users.length > 0 ? createElement("section", { className: "grid gap-3" },
             createElement("div", { className: "glass-panel rounded-3xl p-5 hover-lift shine-effect" },
-                createElement("h2", { className: "font-headline-md text-on-surface" }, "创作者"),
-                createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "可能相关的创作者。")
+                createElement("h2", { className: "font-headline-md text-on-surface" }, "作者"),
+                createElement("p", { className: "mt-1 text-[14px] leading-6 text-on-surface-variant" }, "可能相关的作者。")
             ),
             ...viewState.users.map(renderUserResult)
         ) : null
     );
+}
+
+function getSearchTarget(type: string | null): SearchTarget {
+    return type === "author" ? "author" : "content";
+}
+
+function getSearchHref(query: string, target: SearchTarget) {
+    const params = new URLSearchParams();
+    if (query) {
+        params.set("q", query);
+    }
+    if (target !== "content") {
+        params.set("type", target);
+    }
+
+    return `/search?${params.toString()}`;
 }
 
 function renderUserResult(item: SearchUserItem) {
