@@ -2140,6 +2140,7 @@ describe("App routes", () => {
         render(<App />);
 
         expect(await screen.findByRole("heading", { name: "可用的内容搜索结果" })).toBeInTheDocument();
+        expect(document.querySelector('[data-page-state="error"]')).toBeNull();
         expect(screen.queryByText("搜索失败")).not.toBeInTheDocument();
     });
 
