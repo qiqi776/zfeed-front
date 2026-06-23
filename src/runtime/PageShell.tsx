@@ -36,6 +36,7 @@ type ButtonStateSnapshot = {
 };
 
 const maxCommentLength = 255;
+const visibilityPublic = 10;
 
 export function PageShell({ title, htmlClass, bodyClass, styles, children }: PageShellProps) {
     useEffect(() => {
@@ -660,7 +661,7 @@ function handlePublishClick(event: MouseEvent) {
         description: optionalValue(description),
         cover: optionalValue(cover),
         content,
-        visibility: 1
+        visibility: visibilityPublic
     }).then((result) => {
         const contentId = result.content_id ?? result.contentId;
         if (!contentId) {

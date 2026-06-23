@@ -3369,7 +3369,7 @@ describe("App routes", () => {
                 description: "这是独立文章简介",
                 cover: "https://example.com/article-cover.png",
                 content: "这是正文内容",
-                visibility: 1
+                visibility: 10
             })
         })));
         await waitFor(() => expect(window.location.pathname).toBe("/content/6789"));
@@ -3396,7 +3396,7 @@ describe("App routes", () => {
             body: JSON.stringify({
                 title: "没有简介的文章",
                 content: "正文仍然会发布",
-                visibility: 1
+                visibility: 10
             })
         })));
         await waitFor(() => expect(window.location.pathname).toBe("/content/6790"));
